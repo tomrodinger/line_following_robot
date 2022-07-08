@@ -1,0 +1,5 @@
+(fp_lib_table
+  (lib (name "Slide switch")(type "KiCad")(uri "${KIPRJMOD}/Slide switch.pretty")(options "")(descr ""))
+  (lib (name "UP2-AH-1-TH")(type "KiCad")(uri "${KIPRJMOD}/UP2-AH-1-TH.pretty")(options "")(descr ""))
+  (lib (name "USB A SMD PAD")(type "KiCad")(uri "${KIPRJMOD}/USB A SMD PAD.pretty")(options "")(descr ""))
+)
