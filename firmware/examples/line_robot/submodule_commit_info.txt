@@ -1,0 +1,9 @@
+*************submodule information*********************
+
+*****************sdk information************************
+5349428c0f29a90a1a5f7439c4f1c84eb0e81f33 updated last file
+*****************gcc information************************
+riscv64-unknown-elf-gcc (SiFive GCC-Metal 10.2.0-2020.12.8) 10.2.0
+Copyright (C) 2020 Free Software Foundation, Inc.
+This is free software see the source for copying conditions.  There is NO
+warranty not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
