@@ -5,8 +5,8 @@
 
 #define MOTOR_LB_PWM_CHAN          PWM_CH4_INDEX
 #define MOTOR_LA_PWM_CHAN          PWM_CH3_INDEX
-#define MOTOR_RA_PWM_CHAN          PWM_CH1_INDEX
-#define MOTOR_RB_PWM_CHAN          PWM_CH0_INDEX
+#define MOTOR_RA_PWM_CHAN          PWM_CH0_INDEX
+#define MOTOR_RB_PWM_CHAN          PWM_CH1_INDEX
 
 struct device *motor_l[2];
 struct device *motor_r[2];

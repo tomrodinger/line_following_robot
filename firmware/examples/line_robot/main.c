@@ -31,13 +31,17 @@
 #include <FreeRTOS.h>
 #include "task.h"
 #include "ble_app.h"
+#include "audio.h"
 
-static StackType_t main_stack[2048];
+static StackType_t main_stack[1024];
 static StaticTask_t main_task_handle;
 
 extern uint8_t _heap_start;
 extern uint8_t _heap_size; // @suppress("Type cannot be resolved")
+extern uint8_t _heap1_start;
+extern uint8_t _heap1_size; // @suppress("Type cannot be resolved")
 static HeapRegion_t xHeapRegions[] = {
+    { &_heap1_start, (unsigned int)&_heap1_size },
     { &_heap_start, (unsigned int)&_heap_size },
     { NULL, 0 }, /* Terminates the array. */
     { NULL, 0 }  /* Terminates the array. */
@@ -149,6 +153,8 @@ int main(void)
     Sec_Eng_Trng_Enable();
 
     vPortDefineHeapRegions(xHeapRegions);
+
+    audio_init();
 
     xTaskCreateStatic(main_task, (char *)"main", sizeof(main_stack) / 4, NULL, configMAX_PRIORITIES - 1, main_stack, &main_task_handle);
 

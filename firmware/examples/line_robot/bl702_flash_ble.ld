@@ -152,6 +152,17 @@ SECTIONS
     /* Check if data + heap + stack exceeds RAM limit */
     ASSERT(_HeapBase >= __tcm_data_end__, "region RAM overflowed with stack")
 
+    .heap1_dummy (NOLOAD):
+    {
+        _heap1_start = .;
+        . = ALIGN(0x4);
+        . = . + 0x4000;
+        . = ALIGN(0x4);
+        _heap1_end = .;
+    } > dtcm_memory
+
+    PROVIDE( _heap1_size = _heap1_end - _heap1_start);
+
     /*************************************************************************/
     /* .stack_dummy section doesn't contains any symbols. It is only
      * used for linker to calculate size of stack sections, and assign
