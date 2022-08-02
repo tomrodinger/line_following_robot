@@ -26,7 +26,7 @@
 
 /* PERIPHERAL USING LIST */
 #define BSP_USING_ADC0
-// #define BSP_USING_DAC0
+#define BSP_USING_DAC0
 #define BSP_USING_UART0
 // #define BSP_USING_UART1
 // #define BSP_USING_SPI0
@@ -78,8 +78,8 @@
 #ifndef DAC_CONFIG
 #define DAC_CONFIG                             \
     {                                          \
-        .channels = DAC_CHANNEL_0,             \
-        .sample_freq = DAC_SAMPLE_FREQ_500KHZ, \
+        .channels = DAC_CHANNEL_1,             \
+        .sample_freq = DAC_SAMPLE_FREQ_16KHZ, \
         .vref = DAC_VREF_INTERNAL,             \
     }
 #endif
