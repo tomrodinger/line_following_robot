@@ -134,7 +134,7 @@ int dac_open(struct device *dev, uint16_t oflag)
 
     /* GPIP enable or disable channel */
     tmpVal = BL_RD_REG(GPIP_BASE, GPIP_GPDAC_CONFIG);
-    if (dac_channel_enable_check & DAC_CHANNEL_0) {
+    if (1) {
         tmpVal = BL_SET_REG_BIT(tmpVal, GPIP_GPDAC_EN);
     }
     if (dac_channel_enable_check & DAC_CHANNEL_1) {
@@ -143,7 +143,7 @@ int dac_open(struct device *dev, uint16_t oflag)
     BL_WR_REG(GPIP_BASE, GPIP_GPDAC_CONFIG, tmpVal);
 
     /* GLB enable or disable channel */
-    if (dac_channel_enable_check & DAC_CHANNEL_0) {
+    if (1) {
         /* a channel */
         tmpVal = BL_RD_REG(GLB_BASE, GLB_GPDAC_ACTRL);
         tmpVal = BL_SET_REG_BIT(tmpVal, GLB_GPDAC_IOA_EN);
