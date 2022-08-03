@@ -170,8 +170,8 @@ typedef struct
 /** @defgroup  PARTITION_Public_Macros
  *  @{
  */
-#define BFLB_PT_TABLE0_ADDRESS 0x3D000
-#define BFLB_PT_TABLE1_ADDRESS 0x3E000
+#define BFLB_PT_TABLE0_ADDRESS 0x2D000
+#define BFLB_PT_TABLE1_ADDRESS 0x2E000
 #define BFLB_PT_MAGIC_CODE     0x54504642
 typedef BL_Err_Type (*p_pt_table_flash_erase)(uint32_t startaddr, uint32_t endaddr);
 typedef BL_Err_Type (*p_pt_table_flash_write)(uint32_t addr, uint8_t *data, uint32_t len);
