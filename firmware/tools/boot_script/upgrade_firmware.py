@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import sys
+from sys import platform
 import argparse
 import serial
 from serial.serialutil import to_bytes
@@ -32,15 +33,18 @@ BFLB_EFLASH_LOADER_CMD_FLASH_READSHA=b'\x3D'
 BFLB_EFLASH_LOADER_CMD_FLASH_XIP_READSHA=b'\x3E'
 
 FLASH_START_ADDRESS=0x3F000
-FLASH_TOTAL_SIZE=0xba000
+FLASH_TOTAL_SIZE=0xca000
 FLASH_END_ADDRESS=FLASH_START_ADDRESS + FLASH_TOTAL_SIZE
 FLASH_PAGE_SIZE=4096
 HANDSHAKE_CMD=b'\x55\x55\x55\x55'
 FLASH_OFFSET=0x2000
 BOOT_ENTRY=0x0000
+MAGIC_CODE="BL702BOOT"
 
-BLE_READ_CHARACTERISTIC_UUID = "00070001-0745-4650-8d93-df59be2fc10a"
-BLE_WRITE_CHARACTERISTIC_UUID = "00070002-0745-4650-8d93-df59be2fc10a "
+BLE_BOOT_READ_CHARACTERISTIC_UUID = "00070001-0745-4650-8d93-df59be2fc10a"
+BLE_BOOT_WRITE_CHARACTERISTIC_UUID = "00070002-0745-4650-8d93-df59be2fc10a "
+BLE_APP_READ_CHARACTERISTIC_UUID = "00070010-0745-4650-8d93-df59be2fc10a"
+BLE_APP_WRITE_CHARACTERISTIC_UUID = "00070011-0745-4650-8d93-df59be2fc10a "
 
 def print_data(data):
     print(data)
@@ -280,51 +284,56 @@ def add_boot_header(data, config):
 
     return header + data
 
-async def ble_process(fw_data):
+async def ble_process(fw_data, addr):
     write_handle = None
     read_handle = None
     rx_queue = Queue(maxsize = 1)
 
     def notification_handler(sender, data):
         rx_queue.put(data)
+
+    async def clean_queue():
+        if not rx_queue.empty():
+            rx_queue.get()
         
     async def get_response_ble(device):
-        timeout = 500
+        timeout = 3
         while rx_queue.empty():
             timeout = timeout - 1
             if timeout == 0:
                 break
-            await asyncio.sleep(0.01)
+            await asyncio.sleep(1)
         
         if timeout == 0:
             print("Did not receive response from BLE device")
             await device.disconnect()
-            exit(1)
+            return -1
         else:
             response = rx_queue.get()
         
         if len(response) != 2:
             print("Error: didn't receive enough bytes in the response")
             await device.disconnect()
-            exit(1)
+            return -1
 
         print("Received a response: ", response)
 
         if response[0] != 0x4F:
             print("Error: response NACK or unknown response")
             await device.disconnect()
-            exit(1)
+            return -1
+        return 0
 
     async def write_data(device, buf):
         while len(buf) > 0:
-            if len(buf) <= 20:
-                data = int(0).to_bytes(1, "little") + buf[0 : 20]
+            if len(buf) <= 240:
+                data = int(0).to_bytes(1, "little") + buf[0 : 240]
             else:
-                data = int(1).to_bytes(1, "little") + buf[0 : 20]
+                data = int(1).to_bytes(1, "little") + buf[0 : 240]
             
             await device.write_gatt_char(write_handle, data)
             
-            buf = buf[20: ]
+            buf = buf[240: ]
 
     async def program_one_page_ble(device, data):
         data = int(0).to_bytes(4, "little") + data
@@ -332,11 +341,11 @@ async def ble_process(fw_data):
         command = create_payload(BFLB_EFLASH_LOADER_CMD_FLASH_WRITE, data)
 
     #    print_data(command)
-
+        await clean_queue()
         # write the bytes in three shots with a time delay betwoen, otherwise there is a strange bug where bytes get dropped
         await write_data(device, command)
 
-        await get_response_ble(device)
+        return (await get_response_ble(device))
 
     async def erase_flash_ble(device, size):
         print("Erase flash")
@@ -348,11 +357,9 @@ async def ble_process(fw_data):
         command = create_payload(BFLB_EFLASH_LOADER_CMD_FLASH_ERASE, data)
 
     #    print_data(command)
-
+        await clean_queue()
         # write the bytes in three shots with a time delay betwoen, otherwise there is a strange bug where bytes get dropped
         await write_data(device, command)
-
-        await get_response_ble(device)
 
     async def system_reset_command_ble(device):
         print("Resettting the newly programmed device...")
@@ -363,43 +370,94 @@ async def ble_process(fw_data):
 
         await write_data(device, command)
 
-    device = None
-    while device is None:
-        devices = await BleakScanner.discover()
-        for d in devices:
-            if d.name is not None and "blf702_boot" in d.name:
-                print("Found device with information {}".format(d))
-                device = d
+    dev_addr = None
+    if addr is None:
+        device = None
+        while device is None:
+            devices = await BleakScanner.discover(timeout=3)
+            for d in devices:
+                if d.name is not None and "robot_app" in d.name:
+                    print("Found device with information {}".format(d))
+                    device = d
+                    break
+        if device:
+            dev_addr = device.address
+    else:
+        dev_addr = addr
+    if dev_addr:
+        is_success = False
+        if platform == "linux" or platform == "linux2":
+            os.system('bluetoothctl -- remove {0}'.format(dev_addr)) 
+        for retry in range (0, 10):
+            try: 
+                print('\r\n\r\nConnect robot application and request to jump into bootloader\r\n\r\n')
+
+                async with BleakClient(dev_addr) as client:
+                    for service in client.services:
+                        for char in service.characteristics:
+                            if char.uuid in BLE_APP_WRITE_CHARACTERISTIC_UUID:
+                                write_handle = char
+                    if write_handle is not None:
+                        data = MAGIC_CODE.encode()
+                        await client.write_gatt_char(write_handle, data)
+                        is_success = True
+            except Exception as e:
+                print("Cannot connect device with error as {}".format(e))
+            if is_success:
                 break
-    if device:
-        try: 
-            async with BleakClient(device.address) as client:
-                for service in client.services:
-                    for char in service.characteristics:
-                        if char.uuid in BLE_WRITE_CHARACTERISTIC_UUID:
-                            write_handle = char
-                        if char.uuid in BLE_READ_CHARACTERISTIC_UUID:
-                            read_handle = char
-                if write_handle is not None and read_handle is not None:
-                    await client.start_notify(read_handle, notification_handler)
-                    
-                    await erase_flash_ble(client, len(fw_data))
+            else:
+                print("Failed to connect device, retry new transaction...")
+                print("")
+        if is_success:
+            is_success = False
+            if platform == "linux" or platform == "linux2":
+                os.system('bluetoothctl -- remove {0}'.format(dev_addr)) 
+            for retry in range (0, 10):
+                try:
+                    print('\r\n\r\nConnect robot bootloader and request flash erasing\r\n\r\n')
 
-                    FLASH_PAGE_SIZE = 4096
-                    while len(fw_data) > 0:
-                        print("Size left:", len(fw_data))
-                        # if len(data) < FLASH_PAGE_SIZE:
-                        #     data = data + bytearray([0]) * (FLASH_PAGE_SIZE - len(data))
-                        #     print("Size left after append:", len(data))
-                        # assert len(data) >= FLASH_PAGE_SIZE
-                        await program_one_page_ble(client, fw_data[0 : FLASH_PAGE_SIZE])
-                        fw_data = fw_data[FLASH_PAGE_SIZE:]
+                    async with BleakClient(dev_addr) as client:
+                        for service in client.services:
+                            for char in service.characteristics:
+                                if char.uuid in BLE_BOOT_WRITE_CHARACTERISTIC_UUID:
+                                    write_handle = char
+                                if char.uuid in BLE_BOOT_READ_CHARACTERISTIC_UUID:
+                                    read_handle = char
+                        if write_handle is not None and read_handle is not None:
+                            await client.start_notify(read_handle, notification_handler)
+                            await asyncio.sleep(0.5)
+                            await erase_flash_ble(client, len(fw_data))
+                            await asyncio.sleep(15)
 
-                    await system_reset_command_ble(client)
+                    print('\r\n\r\nErased flash, reconnect to program device\r\n\r\n')
 
-                await client.disconnect()
-        except Exception as e:
-            print("Cannot connect device with error as {}".format(e))
+                    async with BleakClient(dev_addr) as client:
+                        if write_handle is not None and read_handle is not None:
+                            await client.start_notify(read_handle, notification_handler)
+                            await asyncio.sleep(0.5)
+                            
+                            FLASH_PAGE_SIZE = 4096
+                            while len(fw_data) > 0:
+                                print("Size left:", len(fw_data))
+                                # if len(data) < FLASH_PAGE_SIZE:
+                                #     data = data + bytearray([0]) * (FLASH_PAGE_SIZE - len(data))
+                                #     print("Size left after append:", len(data))
+                                # assert len(data) >= FLASH_PAGE_SIZE
+                                ret = (await program_one_page_ble(client, fw_data[0 : FLASH_PAGE_SIZE]))
+                                if ret != 0:
+                                    break
+                                fw_data = fw_data[FLASH_PAGE_SIZE:]
+                            if ret == 0:
+                                await system_reset_command_ble(client)
+                                await asyncio.sleep(0.5)
+                                is_success = True
+                except Exception as e:
+                    print("Cannot connect device with error as {}".format(e))
+                if is_success:
+                    break
+                else:
+                    print("Upload failed, retry new transaction...")
+                    print("")
 
 # Define the arguments for this program. This program takes in an optional -p option to specify the serial port device
 # and it also takes a mandatory firmware file name
@@ -408,6 +466,7 @@ parser.add_argument('-p', '--port', help='serial port device', default=None)
 parser.add_argument('-P', '--PORT', help='show all ports on the system and let the user select from a menu', action="store_true")
 parser.add_argument('-i', '--ini', help='Bootheader configuration file', default=None)
 parser.add_argument('-b', '--bluetooth', help='Update over bluetooth', action="store_true", default=False)
+parser.add_argument('-a', '--addr', help='Bluetooth address of device', default=None)
 parser.add_argument('firmware_filename', help='new firmware file to send to the device')
 args = parser.parse_args()
 
@@ -468,4 +527,4 @@ if args.bluetooth == False:
 
     ser.close()
 else:
-    asyncio.run(ble_process(data))
+    asyncio.run(ble_process(data, args.addr))
