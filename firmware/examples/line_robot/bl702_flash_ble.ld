@@ -23,7 +23,7 @@ __EM_SIZE = DEFINED(ble_controller_init) ? 8K : 0K;
 
 MEMORY
 {
-    xip_memory  (rx)  : ORIGIN = 0x23000000, LENGTH = 1024K
+    xip_memory  (rx)  : ORIGIN = 0x23000000, LENGTH = 808K
     itcm_memory (rx)  : ORIGIN = 0x22014000, LENGTH = 16K
     dtcm_memory (rx)  : ORIGIN = 0x42018000, LENGTH = 32K
     ram_memory  (!rx) : ORIGIN = 0x42020000, LENGTH = 32K

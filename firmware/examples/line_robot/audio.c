@@ -101,8 +101,8 @@ static void audio_to_10_bit(short *in, short *out, int count)
     idx = 0;
        
     while(idx < count) { 
-        i = (short)((float)(in[idx]) * mul);
-        // i = in[idx];
+        // i = (short)((float)(in[idx]) * mul);
+        i = in[idx];
         
         i += m; 
         j = i + 32768 - pow(2, AUDIO_MAX_BITS) / 2; 

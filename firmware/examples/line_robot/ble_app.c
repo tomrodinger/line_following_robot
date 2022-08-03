@@ -15,6 +15,7 @@
 #include "bl702_sec_eng.h"
 #include "ring_buffer.h"
 #include "gatt.h"
+#include "motor.h"
 
 #define TO_BLE_INTERVAL(x)  ((x) * 0.625)
 
@@ -23,11 +24,24 @@ SemaphoreHandle_t tx_sem;
 static struct bt_gatt_exchange_params exchg_mtu;
 static bool is_ble_app_recv = false;
 
+#define MAGIC_CODE  "BL702BOOT"
+
 static int ble_app_recv(struct bt_conn *conn,
               const struct bt_gatt_attr *attr, const void *buf,
               u16_t len, u16_t offset, u8_t flags)
 {
     is_ble_app_recv = true;
+
+    if ((len == sizeof(MAGIC_CODE) - 1) && 
+            (!strncmp(buf, MAGIC_CODE, sizeof(MAGIC_CODE) - 1))) {
+        motor_run(STOP, 0);
+        __disable_irq();
+        GLB_SW_POR_Reset();
+        while (1) {
+            /*empty dead loop*/
+        }
+    }
+
     return 0;
 }
 
