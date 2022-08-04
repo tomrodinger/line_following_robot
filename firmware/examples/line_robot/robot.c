@@ -114,9 +114,9 @@ void robot_run(void)
         left_speed = 50 - output;
 
         if (left_speed < 0) left_speed = 0;
-        if (left_speed > 100) left_speed = 100;
+        if (left_speed > 80) left_speed = 80;
         if (right_speed < 0) right_speed = 0;
-        if (right_speed > 100) right_speed = 100;
+        if (right_speed > 80) right_speed = 80;
 
         prev_diff_speed = abs(left_speed - right_speed);
 
