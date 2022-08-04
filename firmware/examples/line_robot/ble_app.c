@@ -96,7 +96,7 @@ static const struct bt_data ad[] = {
 static struct bt_gatt_attr blattrs[]= {
     BT_GATT_PRIMARY_SERVICE(BT_UUID_DECLARE_16(0xFFF0)),
 
-    BT_GATT_CHARACTERISTIC(BT_UUID_DECLARE_128(BT_UUID_128_ENCODE(0x00070010, 0x0745, 0x4650, 0x8d93, 0xdf59be2fc10a)),
+    BT_GATT_CHARACTERISTIC(BT_UUID_DECLARE_128(BT_UUID_128_ENCODE(0x00070001, 0x0745, 0x4650, 0x8d93, 0xdf59be2fc10a)),
                             BT_GATT_CHRC_READ | BT_GATT_CHRC_NOTIFY,
                             BT_GATT_PERM_READ,
                             NULL,
@@ -105,7 +105,7 @@ static struct bt_gatt_attr blattrs[]= {
 
     BT_GATT_CCC(ble_app_cfg_changed, BT_GATT_PERM_READ | BT_GATT_PERM_WRITE),
 
-    BT_GATT_CHARACTERISTIC(BT_UUID_DECLARE_128(BT_UUID_128_ENCODE(0x00070011, 0x0745, 0x4650, 0x8d93, 0xdf59be2fc10a)),
+    BT_GATT_CHARACTERISTIC(BT_UUID_DECLARE_128(BT_UUID_128_ENCODE(0x00070002, 0x0745, 0x4650, 0x8d93, 0xdf59be2fc10a)),
                             BT_GATT_CHRC_WRITE_WITHOUT_RESP,
                             BT_GATT_PERM_WRITE,
                             NULL,
@@ -122,7 +122,7 @@ static struct bt_conn_cb conn_callbacks = {
 
 void bt_enable_cb(int err)
 {
-    uint8_t data[32];
+    bt_addr_le_t adv_addr;
     char str[100] = {0};
     struct bt_le_adv_param adv_param = {
         .options = BT_LE_ADV_OPT_CONNECTABLE | 
@@ -132,8 +132,8 @@ void bt_enable_cb(int err)
     };
     
     if (!err) {
-        Sec_Eng_Trng_Read(data);
-        sprintf(str, "robot_app_%02X%02X", data[30], data[31]);
+        bt_get_local_public_address(&adv_addr);
+        sprintf(str, "robot_bl702_%02X%02X", adv_addr.a.val[0], adv_addr.a.val[1]);
         
         bt_set_name(str);
 

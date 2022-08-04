@@ -198,12 +198,12 @@ static struct bt_conn_cb conn_callbacks = {
 
 void bt_enable_cb(int err)
 {
-    uint8_t data[32];
+    bt_addr_le_t adv_addr;
     char str[100] = {0};
     
     if (!err) {
-        Sec_Eng_Trng_Read(data);
-        sprintf(str, "robot_boot_%02X%02X", data[30], data[31]);
+        bt_get_local_public_address(&adv_addr);
+        sprintf(str, "robot_bl702_%02X%02X", adv_addr.a.val[0], adv_addr.a.val[1]);
         
         bt_set_name(str);
 

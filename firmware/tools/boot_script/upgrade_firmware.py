@@ -41,10 +41,8 @@ FLASH_OFFSET=0x2000
 BOOT_ENTRY=0x0000
 MAGIC_CODE="BL702BOOT"
 
-BLE_BOOT_READ_CHARACTERISTIC_UUID = "00070001-0745-4650-8d93-df59be2fc10a"
-BLE_BOOT_WRITE_CHARACTERISTIC_UUID = "00070002-0745-4650-8d93-df59be2fc10a "
-BLE_APP_READ_CHARACTERISTIC_UUID = "00070010-0745-4650-8d93-df59be2fc10a"
-BLE_APP_WRITE_CHARACTERISTIC_UUID = "00070011-0745-4650-8d93-df59be2fc10a "
+BLE_READ_CHARACTERISTIC_UUID = "00070001-0745-4650-8d93-df59be2fc10a"
+BLE_WRITE_CHARACTERISTIC_UUID = "00070002-0745-4650-8d93-df59be2fc10a "
 
 def print_data(data):
     print(data)
@@ -376,7 +374,7 @@ async def ble_process(fw_data, addr):
         while device is None:
             devices = await BleakScanner.discover(timeout=3)
             for d in devices:
-                if d.name is not None and "robot_app" in d.name:
+                if d.name is not None and "robot_bl702" in d.name:
                     print("Found device with information {}".format(d))
                     device = d
                     break
@@ -386,8 +384,6 @@ async def ble_process(fw_data, addr):
         dev_addr = addr
     if dev_addr:
         is_success = False
-        if platform == "linux" or platform == "linux2":
-            os.system('bluetoothctl -- remove {0}'.format(dev_addr)) 
         for retry in range (0, 10):
             try: 
                 print('\r\n\r\nConnect robot application and request to jump into bootloader\r\n\r\n')
@@ -395,7 +391,7 @@ async def ble_process(fw_data, addr):
                 async with BleakClient(dev_addr) as client:
                     for service in client.services:
                         for char in service.characteristics:
-                            if char.uuid in BLE_APP_WRITE_CHARACTERISTIC_UUID:
+                            if char.uuid in BLE_WRITE_CHARACTERISTIC_UUID:
                                 write_handle = char
                     if write_handle is not None:
                         data = MAGIC_CODE.encode()
@@ -410,8 +406,6 @@ async def ble_process(fw_data, addr):
                 print("")
         if is_success:
             is_success = False
-            if platform == "linux" or platform == "linux2":
-                os.system('bluetoothctl -- remove {0}'.format(dev_addr)) 
             for retry in range (0, 10):
                 try:
                     print('\r\n\r\nConnect robot bootloader and request flash erasing\r\n\r\n')
@@ -419,9 +413,9 @@ async def ble_process(fw_data, addr):
                     async with BleakClient(dev_addr) as client:
                         for service in client.services:
                             for char in service.characteristics:
-                                if char.uuid in BLE_BOOT_WRITE_CHARACTERISTIC_UUID:
+                                if char.uuid in BLE_WRITE_CHARACTERISTIC_UUID:
                                     write_handle = char
-                                if char.uuid in BLE_BOOT_READ_CHARACTERISTIC_UUID:
+                                if char.uuid in BLE_READ_CHARACTERISTIC_UUID:
                                     read_handle = char
                         if write_handle is not None and read_handle is not None:
                             await client.start_notify(read_handle, notification_handler)
