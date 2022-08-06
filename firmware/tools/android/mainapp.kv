@@ -1,0 +1,70 @@
+Main:
+    BoxLayout:
+        orientation: 'vertical'
+
+        BoxLayout:
+            size_hint_y: None
+            height: 500
+            orientation: 'horizontal'
+
+            BoxLayout:
+                orientation: 'vertical'
+                Label:
+                    text: 'Binary File Path:'
+                TextInput:
+                    id: textpath
+                    text: ''
+                    disabled: True
+            Button:
+                text: "Browse"
+                on_release: root.load_command()
+
+        BoxLayout:
+            size_hint_y: None
+            height: 500
+            orientation: 'horizontal'
+
+            BoxLayout:
+                orientation: 'vertical'
+                Label:
+                    text: 'INI File Path:'
+                TextInput:
+                    id: textpath1
+                    text: ''
+                    disabled: True
+            Button:
+                text: "Browse"
+                on_release: root.load_command1()
+
+        Button:
+            id: program_bt
+            text: "Program"
+            on_release: root.process_command()
+        Label:
+            text: 'Status'
+        ScrollView:
+            id: scroller
+            TextInput:
+                id: texterror
+                text: ''
+                disabled: True
+
+<LoadDialog>:
+    BoxLayout:
+        size: root.size
+        pos: root.pos
+        orientation: "vertical"
+        FileChooserListView:
+            id: filechooser
+            filters: ['*.ini','*.bin']
+
+        BoxLayout:
+            size_hint_y: None
+            height: 200
+            Button:
+                text: "Cancel"
+                on_release: root.cancel()
+
+            Button:
+                text: "Load"
+                on_release: root.load(filechooser.path, filechooser.selection)
