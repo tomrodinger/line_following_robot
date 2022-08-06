@@ -89,7 +89,7 @@ static void bl_disconnected(struct bt_conn *conn, uint8_t reason)
 
 static const struct bt_data ad[] = {
 	BT_DATA_BYTES(BT_DATA_FLAGS, (BT_LE_AD_GENERAL | BT_LE_AD_NO_BREDR)),
-	BT_DATA(BT_DATA_NAME_COMPLETE, "bl702_robot", sizeof("bl702_robot")),
+	// BT_DATA(BT_DATA_NAME_COMPLETE, "bl702_robot", sizeof("bl702_robot")),
     BT_DATA(BT_DATA_MANUFACTURER_DATA, "RV_702", 6),
     
 };
