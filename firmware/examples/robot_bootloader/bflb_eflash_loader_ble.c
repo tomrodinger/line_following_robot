@@ -165,7 +165,7 @@ static void bl_disconnected(struct bt_conn *conn, uint8_t reason)
 
 static const struct bt_data ad[] = {
 	BT_DATA_BYTES(BT_DATA_FLAGS, (BT_LE_AD_GENERAL | BT_LE_AD_NO_BREDR)),
-	BT_DATA(BT_DATA_NAME_COMPLETE, "bl702_robot", sizeof("bl702_robot")),
+	// BT_DATA(BT_DATA_NAME_COMPLETE, "bl702_robot", sizeof("bl702_robot")),
     BT_DATA(BT_DATA_MANUFACTURER_DATA, "BL_702", 6),
     
 };
@@ -237,8 +237,8 @@ uint32_t *bflb_eflash_loader_ble_recv(uint32_t *recv_len, uint32_t maxlen, uint3
 {
     uint32_t *rcv_buf = NULL;
 
-    if (ble_bl_conn) {
-        while(timeout) {
+    while(timeout) {
+        if (ble_bl_conn) {
             if (is_rcv_msg) {
                 *recv_len = g_rx_buf_len;
                 g_rx_buf_len = 0;
@@ -246,11 +246,10 @@ uint32_t *bflb_eflash_loader_ble_recv(uint32_t *recv_len, uint32_t maxlen, uint3
                 rcv_buf = (uint32_t *)g_eflash_loader_readbuf[0];
                 break;
             }
-
-            timeout -= 100;
-            vTaskDelay(pdMS_TO_TICKS(100));
         }
-        return rcv_buf;
+
+        timeout -= 100;
+        vTaskDelay(pdMS_TO_TICKS(100));
     }
     return rcv_buf;
 }

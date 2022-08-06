@@ -439,7 +439,7 @@ static void main_task(void *pvParameters)
     uint32_t crc;
     uint8_t *flash_cfg = NULL;
     uint32_t flash_cfg_len = 0;
-    uint32_t boot_timeout = 500 / 20;
+    uint32_t boot_timeout = 6000 / 20;
 
     bflb_eflash_loader_if_set(BFLB_EFLASH_LOADER_IF_BLE);
     bflb_eflash_loader_if_init();
@@ -455,7 +455,7 @@ static void main_task(void *pvParameters)
 
     bflb_platform_deinit_time();
 
-    vTaskDelay(pdMS_TO_TICKS(2000));
+    vTaskDelay(pdMS_TO_TICKS(500));
 
     if (blsp_boot2_get_feature_flag() == BLSP_BOOT2_CP_FLAG) {
         MSG("BLSP_Boot2_CP:%s,%s\r\n", __DATE__, __TIME__);
