@@ -363,19 +363,26 @@ def thread_main(log, ble, bin_path, ini_path, ui_bt):
         while ble.is_write_done == False:
             time.sleep(0.1)
 
+        dis_timeout = 2000
         while ble.is_have_service == True:
             time.sleep(0.01)
+            dis_timeout = dis_timeout - 1
+            if dis_timeout == 0:
+                break
 
-        while ble.is_have_service == False:
-            time.sleep(0.01)
-
-        log.print_out("Connected to bootloader and erase flash")
+        if dis_timeout != 0:
+            while ble.is_have_service == False:
+                time.sleep(0.01)
+            log.print_out("\r\nConnected to bootloader and erase flash")
+        else:
+            log.print_out("\r\nRobot is already in bootloader mode")
+        
         ble.is_reconnect = False
         erase_flash_ble(ble, len(bin_data))
         ble.close_gatt()
         time.sleep(20)
 
-        log.print_out("Erased flash, reconnect to update firmware")
+        log.print_out("\r\nErased flash, reconnect to update firmware")
         ble.find_device()
 
         read_characteristic = ble.services.search(BLE_READ_CHARACTERISTIC_UUID)
@@ -390,6 +397,7 @@ def thread_main(log, ble, bin_path, ini_path, ui_bt):
             # assert len(data) >= FLASH_PAGE_SIZE
             ret = program_one_page_ble(ble, bin_data[0 : FLASH_PAGE_SIZE], log)
             if ret != 0:
+                log.print_out("Please reset robot and try again\r\n")
                 break
             bin_data = bin_data[FLASH_PAGE_SIZE:]
 
@@ -400,6 +408,7 @@ def thread_main(log, ble, bin_path, ini_path, ui_bt):
         else:
             log.print_out("Failed\r\n")
         ui_bt.disabled = False
+        ble.close_gatt()
 
     except Exception as e:
         log.print_out("\r\n{}".format(e))
@@ -476,9 +485,10 @@ class Main(FloatLayout):
 
     def process_command(self):
         self.ids.program_bt.disabled = True
+        self.ble = BLE()
+        self.ids.texterror.text = ""
         if self.log is None:
             self.log = MyLogHandler(self.ids.texterror)
-            self.ble = BLE()
         threading.Thread(target = thread_main, args = (self.log, self.ble, self.ids.textpath.text, self.ids.textpath1.text, self.ids.program_bt, )).start()
 
 class MainApp(App):

@@ -251,6 +251,12 @@ uint32_t *bflb_eflash_loader_ble_recv(uint32_t *recv_len, uint32_t maxlen, uint3
         timeout -= 100;
         vTaskDelay(pdMS_TO_TICKS(100));
     }
+
+    if (!timeout) {
+        g_rx_buf_len = 0;
+        is_rcv_msg = 0;
+    }
+
     return rcv_buf;
 }
 
