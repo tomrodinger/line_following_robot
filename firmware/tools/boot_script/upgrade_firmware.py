@@ -32,7 +32,7 @@ BFLB_EFLASH_LOADER_CMD_FLASH_CHIPERASE=b'\x3C'
 BFLB_EFLASH_LOADER_CMD_FLASH_READSHA=b'\x3D'
 BFLB_EFLASH_LOADER_CMD_FLASH_XIP_READSHA=b'\x3E'
 
-FLASH_START_ADDRESS=0x3F000
+FLASH_START_ADDRESS=0x2F000
 FLASH_TOTAL_SIZE=0xca000
 FLASH_END_ADDRESS=FLASH_START_ADDRESS + FLASH_TOTAL_SIZE
 FLASH_PAGE_SIZE=4096
@@ -295,55 +295,54 @@ async def ble_process(fw_data, addr):
             rx_queue.get()
         
     async def get_response_ble(device):
-        timeout = 3
+        timeout = 0.05
         while rx_queue.empty():
-            timeout = timeout - 1
+            timeout = timeout - 0.001
             if timeout == 0:
                 break
-            await asyncio.sleep(1)
+            await asyncio.sleep(0.001)
         
         if timeout == 0:
             print("Did not receive response from BLE device")
-            await device.disconnect()
             return -1
         else:
             response = rx_queue.get()
         
         if len(response) != 2:
             print("Error: didn't receive enough bytes in the response")
-            await device.disconnect()
             return -1
 
         print("Received a response: ", response)
 
         if response[0] != 0x4F:
             print("Error: response NACK or unknown response")
-            await device.disconnect()
             return -1
         return 0
 
     async def write_data(device, buf):
         while len(buf) > 0:
-            if len(buf) <= 240:
-                data = int(0).to_bytes(1, "little") + buf[0 : 240]
-            else:
-                data = int(1).to_bytes(1, "little") + buf[0 : 240]
-            
-            await device.write_gatt_char(write_handle, data)
-            
+            await device.write_gatt_char(write_handle, buf[0 : 240])
             buf = buf[240: ]
 
-    async def program_one_page_ble(device, data):
-        data = int(0).to_bytes(4, "little") + data
+    async def program_one_page_ble(device, addr, data):
+        data = addr.to_bytes(4, "little") + data
 
         command = create_payload(BFLB_EFLASH_LOADER_CMD_FLASH_WRITE, data)
 
-    #    print_data(command)
-        await clean_queue()
-        # write the bytes in three shots with a time delay betwoen, otherwise there is a strange bug where bytes get dropped
-        await write_data(device, command)
+        retry = 3
+        while retry > 0:
+            await clean_queue()
+            # write the bytes in three shots with a time delay betwoen, otherwise there is a strange bug where bytes get dropped
+            await write_data(device, command)
+            ret = (await get_response_ble(device))
 
-        return (await get_response_ble(device))
+            if ret == 0:
+                break
+            else:
+                retry = retry - 1
+        if retry == 0:
+            ret = -1
+        return ret
 
     async def erase_flash_ble(device, size):
         print("Erase flash")
@@ -422,7 +421,7 @@ async def ble_process(fw_data, addr):
                             await asyncio.sleep(0.5)
                             await erase_flash_ble(client, len(fw_data))
                             await asyncio.sleep(15)
-
+  
                     print('\r\n\r\nErased flash, reconnect to program device\r\n\r\n')
 
                     async with BleakClient(dev_addr) as client:
@@ -430,17 +429,19 @@ async def ble_process(fw_data, addr):
                             await client.start_notify(read_handle, notification_handler)
                             await asyncio.sleep(0.5)
                             
-                            FLASH_PAGE_SIZE = 4096
+                            FLASH_PAGE_SIZE = 200
+                            start_addr = FLASH_START_ADDRESS
                             while len(fw_data) > 0:
                                 print("Size left:", len(fw_data))
                                 # if len(data) < FLASH_PAGE_SIZE:
                                 #     data = data + bytearray([0]) * (FLASH_PAGE_SIZE - len(data))
                                 #     print("Size left after append:", len(data))
                                 # assert len(data) >= FLASH_PAGE_SIZE
-                                ret = (await program_one_page_ble(client, fw_data[0 : FLASH_PAGE_SIZE]))
+                                ret = (await program_one_page_ble(client, start_addr, fw_data[0 : FLASH_PAGE_SIZE]))
                                 if ret != 0:
                                     break
                                 fw_data = fw_data[FLASH_PAGE_SIZE:]
+                                start_addr = start_addr + FLASH_PAGE_SIZE
                             if ret == 0:
                                 await system_reset_command_ble(client)
                                 await asyncio.sleep(0.5)

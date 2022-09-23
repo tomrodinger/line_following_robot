@@ -43,6 +43,7 @@
 #include "hal_boot2.h"
 #include <FreeRTOS.h>
 #include <task.h>
+#include <semphr.h>
 
 #include "bluetooth.h"
 #include "conn.h"
@@ -53,8 +54,8 @@
 #include "bl702_sec_eng.h"
 
 static struct bt_conn *ble_bl_conn = NULL;
-static volatile uint8_t is_rcv_msg = 0;
 static struct bt_gatt_exchange_params exchg_mtu;
+static SemaphoreHandle_t rx_sem;
 
 void bflb_eflash_loader_ble_if_enable_int(void)
 {
@@ -77,17 +78,12 @@ static int ble_blf_recv(struct bt_conn *conn,
 {
     uint8_t *ble_buf = (uint8_t *)buf;
     uint8_t *rcv_buf = g_eflash_loader_readbuf[0];
+    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
 
-    if (g_rx_buf_len >= BFLB_EFLASH_LOADER_BLE_READBUF_SIZE) {
-        g_rx_buf_len = 0;
-    }
+    arch_memcpy(rcv_buf, ble_buf, len);
+    g_rx_buf_len = len;
 
-    arch_memcpy(&rcv_buf[g_rx_buf_len], &ble_buf[1], len - 1);
-    g_rx_buf_len += len - 1;
-
-    if (!ble_buf[0]) {
-        is_rcv_msg = 1;
-    }
+    xSemaphoreGiveFromISR( rx_sem, &xHigherPriorityTaskWoken );
     
     return 0;
 }
@@ -215,6 +211,8 @@ void bt_enable_cb(int err)
 
 int32_t bflb_eflash_loader_ble_init()
 {
+    rx_sem = xSemaphoreCreateBinary();
+
     GLB_Set_EM_Sel(GLB_EM_8KB);
     ble_controller_init(configMAX_PRIORITIES - 1);
     // Initialize BLE Host stack
@@ -237,24 +235,10 @@ uint32_t *bflb_eflash_loader_ble_recv(uint32_t *recv_len, uint32_t maxlen, uint3
 {
     uint32_t *rcv_buf = NULL;
 
-    while(timeout) {
-        if (ble_bl_conn) {
-            if (is_rcv_msg) {
-                *recv_len = g_rx_buf_len;
-                g_rx_buf_len = 0;
-                is_rcv_msg = 0;
-                rcv_buf = (uint32_t *)g_eflash_loader_readbuf[0];
-                break;
-            }
-        }
-
-        timeout -= 100;
-        vTaskDelay(pdMS_TO_TICKS(100));
-    }
-
-    if (!timeout) {
+    if (xSemaphoreTake(rx_sem, pdMS_TO_TICKS(timeout)) == pdTRUE) {
+        *recv_len = g_rx_buf_len;
         g_rx_buf_len = 0;
-        is_rcv_msg = 0;
+        rcv_buf = (uint32_t *)g_eflash_loader_readbuf[0];
     }
 
     return rcv_buf;

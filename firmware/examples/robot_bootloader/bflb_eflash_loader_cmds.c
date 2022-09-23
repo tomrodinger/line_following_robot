@@ -43,6 +43,7 @@
 #include "hal_flash.h"
 #include "hal_sec_hash.h"
 #include "blsp_media_boot.h"
+#include <FreeRTOS.h>
 
 #define BFLB_EFLASH_LOADER_CHECK_LEN   2048
 #define BFLB_EFLASH_MAX_SIZE           2 * 1024 * 1024
@@ -540,25 +541,26 @@ static int32_t ATTR_TCM_SECTION bflb_eflash_loader_cmd_write_flash(uint16_t cmd,
 {
     int32_t ret = BFLB_EFLASH_LOADER_SUCCESS;
     uint32_t write_len;
+    uint32_t write_addr;
 
     MSG("W\n");
 
     if (len <= 4) {
         ret = BFLB_EFLASH_LOADER_FLASH_WRITE_PARA_ERROR;
     } else {
-        //memcpy(&startaddr,data,4);
+        memcpy(&write_addr,data,4);
         write_len = len - 4;
-        MSG("to%08x,%d\n", p_iap_param.iap_write_addr, write_len);
+        MSG("to%08x,%d\n", write_addr, write_len);
 
-        if (p_iap_param.iap_write_addr < 0xffffffff) {
-            if (SUCCESS != flash_write(p_iap_param.iap_write_addr, data + 4, write_len)) {
+        if (write_addr < 0xffffffff) {
+            if (SUCCESS != flash_write(write_addr, data + 4, write_len)) {
                 /*error , response again with error */
                 MSG("fail\r\n");
                 ret = BFLB_EFLASH_LOADER_FLASH_WRITE_ERROR;
                 g_eflash_loader_error = ret;
             } else {
                 bflb_eflash_loader_cmd_ack(ret);
-                p_iap_param.iap_write_addr += write_len;
+                p_iap_param.iap_write_addr = write_addr + write_len;
                 //bflb_eflash_loader_printe("Write suss\r\n");
                 return BFLB_EFLASH_LOADER_SUCCESS;
             }
