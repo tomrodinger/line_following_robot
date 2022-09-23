@@ -33,7 +33,7 @@ static StaticTask_t audio_task_handle;
 #define MEDIUM_VOLUME   1
 #define MAX_VOLUME      2
 
-#define AUDIO_VOLUME    LOW_VOLUME
+#define AUDIO_VOLUME    MEDIUM_VOLUME
 
 #if AUDIO_VOLUME == LOW_VOLUME
 #define AUDIO_MAX_BITS  8
@@ -89,20 +89,20 @@ static void audio_to_10_bit(short *in, short *out, int count)
     int i, j;
     short o;
 
-    // idx = 0;
-    // while (idx < count) {
-    //     if (max < abs(in[idx])) {
-    //         max = abs(in[idx]);
-    //     }
-    //     idx++;
-    // }
+    idx = 0;
+    while (idx < count) {
+        if (max < abs(in[idx])) {
+            max = abs(in[idx]);
+        }
+        idx++;
+    }
 
-    // mul = 32768 / max;
+    mul = 32768 / max;
     idx = 0;
        
     while(idx < count) { 
-        // i = (short)((float)(in[idx]) * mul);
-        i = in[idx]/2;
+        i = (short)((float)(in[idx]) * mul);
+        // i = in[idx]/2;
         
         i += m; 
         j = i + 32768 - pow(2, AUDIO_MAX_BITS) / 2; 

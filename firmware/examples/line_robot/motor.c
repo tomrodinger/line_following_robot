@@ -57,7 +57,7 @@ void motor_run(motor_direction_t dir, uint8_t speed)
     device_control(motor_l[1], DEVICE_CTRL_PWM_DUTYCYCLE_CONFIG, &pwm_cfg);
     device_control(motor_r[0], DEVICE_CTRL_PWM_DUTYCYCLE_CONFIG, &pwm_cfg);
     device_control(motor_r[1], DEVICE_CTRL_PWM_DUTYCYCLE_CONFIG, &pwm_cfg);
-    bflb_platform_delay_ms(1);
+    bflb_platform_delay_us(1);
 
     if (speed > 100) speed = 100;
 
