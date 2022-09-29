@@ -189,6 +189,9 @@ SECTIONS
     .system_ram_data_region : AT (__system_ram_load_addr)
     {
         . = ALIGN(4);
+
+        KEEP(*(.AppSection))
+
         __system_ram_data_start__ = .;
 
         *(.system_ram)

@@ -23,6 +23,7 @@ static struct bt_conn *ble_bl_conn = NULL;
 SemaphoreHandle_t tx_sem;
 static struct bt_gatt_exchange_params exchg_mtu;
 static bool is_ble_app_recv = false;
+uint32_t g_app_rst_reason __attribute__((section(".AppSection")));
 
 #define MAGIC_CODE  "BL702BOOT"
 
@@ -35,6 +36,7 @@ static int ble_app_recv(struct bt_conn *conn,
     if ((len == sizeof(MAGIC_CODE) - 1) && 
             (!strncmp(buf, MAGIC_CODE, sizeof(MAGIC_CODE) - 1))) {
         motor_run(STOP, 0);
+        g_app_rst_reason = 0xAABBCCDD;
         __disable_irq();
         GLB_SW_POR_Reset();
         while (1) {

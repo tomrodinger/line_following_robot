@@ -71,6 +71,7 @@ uint8_t g_ps_mode = BFLB_PSM_ACTIVE;
 uint8_t g_cpu_count;
 uint32_t g_user_hash_ignored = 0;
 uint8_t g_usb_init_flag = 0;
+uint32_t g_app_rst_reason __attribute__((section(".AppSection")));
 
 void user_vAssertCalled(void) __attribute__((weak, alias("vAssertCalled")));
 void vAssertCalled(void)
@@ -439,7 +440,7 @@ static void main_task(void *pvParameters)
     uint32_t crc;
     uint8_t *flash_cfg = NULL;
     uint32_t flash_cfg_len = 0;
-    uint32_t boot_timeout = 6000 / 20;
+    uint32_t boot_timeout = 1000 / 20;
 
     bflb_eflash_loader_if_set(BFLB_EFLASH_LOADER_IF_BLE);
     bflb_eflash_loader_if_init();
@@ -454,8 +455,6 @@ static void main_task(void *pvParameters)
     flash_init();
 
     bflb_platform_deinit_time();
-
-    vTaskDelay(pdMS_TO_TICKS(500));
 
     if (blsp_boot2_get_feature_flag() == BLSP_BOOT2_CP_FLAG) {
         MSG("BLSP_Boot2_CP:%s,%s\r\n", __DATE__, __TIME__);
@@ -496,6 +495,11 @@ static void main_task(void *pvParameters)
     pt_table_set_flash_operation(flash_erase, flash_write, flash_read);
 
     pt_table_dump();
+
+    if (g_app_rst_reason == 0xAABBCCDD) {
+        boot_timeout = 6000 / 20;
+        g_app_rst_reason = 0;
+    }
 
     while (boot_timeout) {
         if (0 == bflb_eflash_loader_if_handshake_poll(0)) {
