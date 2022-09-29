@@ -56,6 +56,7 @@
 static struct bt_conn *ble_bl_conn = NULL;
 static struct bt_gatt_exchange_params exchg_mtu;
 static SemaphoreHandle_t rx_sem;
+static uint8_t rx_counter;
 
 void bflb_eflash_loader_ble_if_enable_int(void)
 {
@@ -79,11 +80,25 @@ static int ble_blf_recv(struct bt_conn *conn,
     uint8_t *ble_buf = (uint8_t *)buf;
     uint8_t *rcv_buf = g_eflash_loader_readbuf[0];
     BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+    uint8_t rx_pkg_counter = ble_buf[0] & (~0x80);
 
-    arch_memcpy(rcv_buf, ble_buf, len);
-    g_rx_buf_len = len;
-
-    xSemaphoreGiveFromISR( rx_sem, &xHigherPriorityTaskWoken );
+    if ((ble_buf[0] & 0x80) == 0x80) {
+        arch_memcpy(&rcv_buf[g_rx_buf_len], &ble_buf[1], len - 1);
+        g_rx_buf_len += (len - 1);
+        xSemaphoreGiveFromISR( rx_sem, &xHigherPriorityTaskWoken );
+    } else {
+        if (rx_pkg_counter == rx_counter) {
+            rx_counter++;
+            if (rx_counter >= 0x80) {
+                rx_counter = 0;
+            }
+            arch_memcpy(&rcv_buf[g_rx_buf_len], &ble_buf[1], len - 1);
+            g_rx_buf_len += (len - 1);
+        } else {
+            g_rx_buf_len = 0;
+            xSemaphoreGiveFromISR( rx_sem, &xHigherPriorityTaskWoken );
+        }
+    }
     
     return 0;
 }
@@ -115,6 +130,8 @@ static void bl_connected(struct bt_conn *conn, uint8_t err)
     param.interval_min=0x18;
     param.latency=0;
     param.timeout=400;
+    g_rx_buf_len = 0;
+    rx_counter = 0;
 
      MSG("%s err %d\n", __FUNCTION__, err);
 
@@ -236,9 +253,13 @@ uint32_t *bflb_eflash_loader_ble_recv(uint32_t *recv_len, uint32_t maxlen, uint3
     uint32_t *rcv_buf = NULL;
 
     if (xSemaphoreTake(rx_sem, pdMS_TO_TICKS(timeout)) == pdTRUE) {
-        *recv_len = g_rx_buf_len;
-        g_rx_buf_len = 0;
-        rcv_buf = (uint32_t *)g_eflash_loader_readbuf[0];
+        if (g_rx_buf_len) {
+            *recv_len = g_rx_buf_len;
+            g_rx_buf_len = 0;
+            rcv_buf = (uint32_t *)g_eflash_loader_readbuf[0];
+        } else {
+            bflb_eflash_loader_ble_send("NOK", sizeof("NOK"));
+        }
     }
 
     return rcv_buf;
@@ -249,6 +270,7 @@ int32_t bflb_eflash_loader_ble_send(uint32_t *data, uint32_t len)
     MSG("%s len %u\n", __FUNCTION__, len);
 
     if (ble_bl_conn) {
+        rx_counter = 0;
         return bt_gatt_notify(ble_bl_conn, &blattrs[1], (const void*)data, (uint16_t)len);
     }
     
