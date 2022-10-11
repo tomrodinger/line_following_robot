@@ -320,9 +320,21 @@ async def ble_process(fw_data, addr):
         return 0
 
     async def write_data(device, buf):
+        rx_counter = 0
         while len(buf) > 0:
-            await device.write_gatt_char(write_handle, buf[0 : 240])
+            if not rx_queue.empty():
+                return -1
+
+            if len(buf) > 240:
+                header = rx_counter
+            else:
+                header = 0x80
+            await device.write_gatt_char(write_handle, header.to_bytes(1, "little") + buf[0 : 240])
+            rx_counter = rx_counter + 1
+            if rx_counter >= 128:
+                rx_counter = 0
             buf = buf[240: ]
+        return 0
 
     async def program_one_page_ble(device, addr, data):
         data = addr.to_bytes(4, "little") + data
@@ -333,12 +345,16 @@ async def ble_process(fw_data, addr):
         while retry > 0:
             await clean_queue()
             # write the bytes in three shots with a time delay betwoen, otherwise there is a strange bug where bytes get dropped
-            await write_data(device, command)
-            ret = (await get_response_ble(device))
+            ret = await write_data(device, command)
 
             if ret == 0:
-                break
+                ret = (await get_response_ble(device))
+                if ret == 0:
+                    break
+                else:
+                    retry = retry - 1
             else:
+                print("Write data failed, Retry")
                 retry = retry - 1
         if retry == 0:
             ret = -1
@@ -420,27 +436,29 @@ async def ble_process(fw_data, addr):
                             await client.start_notify(read_handle, notification_handler)
                             await asyncio.sleep(0.5)
                             await erase_flash_ble(client, len(fw_data))
-                            await asyncio.sleep(15)
+                            await asyncio.sleep(1)
   
+                    await asyncio.sleep(2)
                     print('\r\n\r\nErased flash, reconnect to program device\r\n\r\n')
+                    program_data = fw_data
 
                     async with BleakClient(dev_addr) as client:
                         if write_handle is not None and read_handle is not None:
                             await client.start_notify(read_handle, notification_handler)
                             await asyncio.sleep(0.5)
                             
-                            FLASH_PAGE_SIZE = 200
+                            FLASH_PAGE_SIZE = 1024
                             start_addr = FLASH_START_ADDRESS
-                            while len(fw_data) > 0:
-                                print("Size left:", len(fw_data))
+                            while len(program_data) > 0:
+                                print("Size left:", len(program_data))
                                 # if len(data) < FLASH_PAGE_SIZE:
                                 #     data = data + bytearray([0]) * (FLASH_PAGE_SIZE - len(data))
                                 #     print("Size left after append:", len(data))
                                 # assert len(data) >= FLASH_PAGE_SIZE
-                                ret = (await program_one_page_ble(client, start_addr, fw_data[0 : FLASH_PAGE_SIZE]))
+                                ret = (await program_one_page_ble(client, start_addr, program_data[0 : FLASH_PAGE_SIZE]))
                                 if ret != 0:
                                     break
-                                fw_data = fw_data[FLASH_PAGE_SIZE:]
+                                program_data = program_data[FLASH_PAGE_SIZE:]
                                 start_addr = start_addr + FLASH_PAGE_SIZE
                             if ret == 0:
                                 await system_reset_command_ble(client)
