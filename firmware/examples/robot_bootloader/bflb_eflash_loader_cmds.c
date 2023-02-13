@@ -44,6 +44,7 @@
 #include "hal_sec_hash.h"
 #include "blsp_media_boot.h"
 #include <FreeRTOS.h>
+#include "hal_wdt.h"
 
 #define BFLB_EFLASH_LOADER_CHECK_LEN   2048
 #define BFLB_EFLASH_MAX_SIZE           2 * 1024 * 1024
@@ -511,6 +512,13 @@ static int32_t bflb_eflash_loader_cmd_erase_flash(uint16_t cmd, uint8_t *data, u
 {
     int32_t ret = BFLB_EFLASH_LOADER_SUCCESS;
     uint32_t startaddr, endaddr;
+    struct device *wdg;
+
+    wdg = device_find("wdg_rst");
+
+    if (wdg) {
+        device_control(wdg, DEVICE_CTRL_SUSPEND, NULL);
+    }
 
     MSG("E\n");
 
@@ -531,6 +539,11 @@ static int32_t bflb_eflash_loader_cmd_erase_flash(uint16_t cmd, uint8_t *data, u
             MSG("fail\n");
             ret = BFLB_EFLASH_LOADER_FLASH_ERASE_ERROR;
         }
+    }
+
+    if (wdg) {
+        device_control(wdg, DEVICE_CTRL_RST_WDT_COUNTER, NULL);
+        device_control(wdg, DEVICE_CTRL_RESUME, NULL);
     }
 
     bflb_eflash_loader_cmd_ack(ret);

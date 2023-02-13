@@ -4,6 +4,7 @@
 #include "xz_config.h"
 #include "blsp_port.h"
 #include "hal_boot2.h"
+#include "hal_wdt.h"
 #include "bflb_platform.h"
 
 uint8_t *g_eflash_loader_readbuf[2] = {NULL, NULL};
@@ -102,6 +103,9 @@ int32_t bflb_eflash_loader_main()
     uint8_t err_cnt = 0;
     uint8_t to_cnt = 0;
     uint8_t is_break_err = 0;
+    struct device *wdg;
+
+    wdg = device_find("wdg_rst");
 
     MSG("bflb_eflash_loader_main\r\n");
     pt_table_dump();
@@ -109,6 +113,10 @@ int32_t bflb_eflash_loader_main()
     if(0 != ret){
         MSG("no valid partition table\r\n");
         return -1;
+    }
+
+    if (wdg) {
+        device_control(wdg, DEVICE_CTRL_RESUME, NULL);
     }
 
     while (1) {
@@ -163,6 +171,14 @@ int32_t bflb_eflash_loader_main()
                 break;
             }
         }
+
+        if (wdg) {
+            device_control(wdg, DEVICE_CTRL_RST_WDT_COUNTER, NULL);
+        }
+    }
+
+    if (wdg) {
+        device_control(wdg, DEVICE_CTRL_SUSPEND, NULL);
     }
 
     /* read data finished,deinit and go on*/

@@ -14,6 +14,7 @@ list(APPEND TARGET_REQUIRED_SRCS bflb_eflash_loader_interface.c )
 SET(LINKER_SCRIPT ${BOOT2_LINKER_SCRIPT})  
 
 list(APPEND GLOBAL_C_FLAGS -DNO_MSG)
+list(APPEND GLOBAL_C_FLAGS -DTRAP_RESET)
 set(LINKER_SCRIPT ${CMAKE_CURRENT_LIST_DIR}/bootloader.ld)
 
 set(mains main.c)

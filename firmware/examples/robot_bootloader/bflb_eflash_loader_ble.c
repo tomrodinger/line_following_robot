@@ -52,11 +52,13 @@
 #include "hci_driver.h"
 #include "ble_lib_api.h"
 #include "bl702_sec_eng.h"
+#include "hal_wdt.h"
 
 static struct bt_conn *ble_bl_conn = NULL;
 static struct bt_gatt_exchange_params exchg_mtu;
 static SemaphoreHandle_t rx_sem;
-static uint8_t rx_counter;
+static SemaphoreHandle_t tx_sem;
+static bool is_indicate_enabled = false;
 
 void bflb_eflash_loader_ble_if_enable_int(void)
 {
@@ -80,37 +82,48 @@ static int ble_blf_recv(struct bt_conn *conn,
     uint8_t *ble_buf = (uint8_t *)buf;
     uint8_t *rcv_buf = g_eflash_loader_readbuf[0];
     BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-    uint8_t rx_pkg_counter = ble_buf[0] & (~0x80);
+    uint16_t pkg_length;
 
-    if ((ble_buf[0] & 0x80) == 0x80) {
-        arch_memcpy(&rcv_buf[g_rx_buf_len], &ble_buf[1], len - 1);
-        g_rx_buf_len += (len - 1);
-        xSemaphoreGiveFromISR( rx_sem, &xHigherPriorityTaskWoken );
-    } else {
-        if (rx_pkg_counter == rx_counter) {
-            rx_counter++;
-            if (rx_counter >= 0x80) {
-                rx_counter = 0;
-            }
-            arch_memcpy(&rcv_buf[g_rx_buf_len], &ble_buf[1], len - 1);
-            g_rx_buf_len += (len - 1);
-        } else {
-            g_rx_buf_len = 0;
-            xSemaphoreGiveFromISR( rx_sem, &xHigherPriorityTaskWoken );
-        }
+    /*If prepare write, it will return 0 */
+    if (flags == BT_GATT_WRITE_FLAG_PREPARE) {
+        return 0;
     }
-    
-    return 0;
+
+    if ((len + g_rx_buf_len) >= BFLB_EFLASH_LOADER_BLE_READBUF_SIZE) {
+        return BT_GATT_ERR(BT_ATT_ERR_INVALID_ATTRIBUTE_LEN);
+    }
+
+    arch_memcpy(&rcv_buf[g_rx_buf_len], ble_buf, len);
+    g_rx_buf_len += len;
+
+    if (g_rx_buf_len < 2) {
+        g_rx_buf_len = 0;
+        return BT_GATT_ERR(BT_ATT_ERR_VALUE_NOT_ALLOWED);
+    }
+
+    pkg_length = rcv_buf[0] | (rcv_buf[1] << 8);
+
+    if ((g_rx_buf_len - 2) == pkg_length) {
+        g_rx_buf_len = g_rx_buf_len - 2;
+        xSemaphoreGiveFromISR( rx_sem, &xHigherPriorityTaskWoken );
+    } else if ((g_rx_buf_len - 2) > pkg_length) {
+        g_rx_buf_len = 0;
+        xSemaphoreGiveFromISR( rx_sem, &xHigherPriorityTaskWoken );
+    }
+
+    return len;
 }
 
 static void ble_cfg_changed(const struct bt_gatt_attr *attr, u16_t vblfue)
 {
-    if(vblfue == BT_GATT_CCC_NOTIFY) {
+    if(vblfue == BT_GATT_CCC_INDICATE) {
         
-     MSG("enable notify.\n");
+        MSG("enable notify.\n");
+        is_indicate_enabled = true;
   
     } else {
         MSG("disable notify.\n");
+        is_indicate_enabled = false;
     }
 }
 
@@ -131,7 +144,6 @@ static void bl_connected(struct bt_conn *conn, uint8_t err)
     param.latency=0;
     param.timeout=400;
     g_rx_buf_len = 0;
-    rx_counter = 0;
 
      MSG("%s err %d\n", __FUNCTION__, err);
 
@@ -158,6 +170,8 @@ static void bl_connected(struct bt_conn *conn, uint8_t err)
             g_eflash_loader_readbuf[0] = pvPortMalloc(BFLB_EFLASH_LOADER_BLE_READBUF_SIZE);
             arch_memset(g_eflash_loader_readbuf[0], 0, BFLB_EFLASH_LOADER_BLE_READBUF_SIZE);
         }
+
+        xSemaphoreTake(rx_sem, 0);
         
         bflb_eflash_loader_if_set(BFLB_EFLASH_LOADER_IF_BLE);
 	}
@@ -172,8 +186,7 @@ static void bl_disconnected(struct bt_conn *conn, uint8_t reason)
     }
 
     ble_bl_conn = NULL;
-
-    bflb_eflash_loader_if_set(BFLB_EFLASH_LOADER_IF_UART);
+    is_indicate_enabled = false;
 }
 
 static const struct bt_data ad[] = {
@@ -186,7 +199,7 @@ static struct bt_gatt_attr blattrs[]= {
     BT_GATT_PRIMARY_SERVICE(BT_UUID_DECLARE_16(0xFFF0)),
 
     BT_GATT_CHARACTERISTIC(BT_UUID_DECLARE_128(BT_UUID_128_ENCODE(0x00070001, 0x0745, 0x4650, 0x8d93, 0xdf59be2fc10a)),
-                            BT_GATT_CHRC_READ | BT_GATT_CHRC_NOTIFY,
+                            BT_GATT_CHRC_READ | BT_GATT_CHRC_INDICATE,
                             BT_GATT_PERM_READ,
                             NULL,
                             NULL,
@@ -195,7 +208,7 @@ static struct bt_gatt_attr blattrs[]= {
     BT_GATT_CCC(ble_cfg_changed, BT_GATT_PERM_READ | BT_GATT_PERM_WRITE),
 
     BT_GATT_CHARACTERISTIC(BT_UUID_DECLARE_128(BT_UUID_128_ENCODE(0x00070002, 0x0745, 0x4650, 0x8d93, 0xdf59be2fc10a)),
-                            BT_GATT_CHRC_WRITE_WITHOUT_RESP,
+                            BT_GATT_CHRC_WRITE,
                             BT_GATT_PERM_WRITE,
                             NULL,
                             ble_blf_recv,
@@ -229,6 +242,7 @@ void bt_enable_cb(int err)
 int32_t bflb_eflash_loader_ble_init()
 {
     rx_sem = xSemaphoreCreateBinary();
+    tx_sem = xSemaphoreCreateBinary();
 
     GLB_Set_EM_Sel(GLB_EM_8KB);
     ble_controller_init(configMAX_PRIORITIES - 1);
@@ -251,27 +265,123 @@ int32_t bflb_eflash_loader_ble_handshake_poll(uint32_t timeout)
 uint32_t *bflb_eflash_loader_ble_recv(uint32_t *recv_len, uint32_t maxlen, uint32_t timeout)
 {
     uint32_t *rcv_buf = NULL;
+    uint32_t wait_new_conn_timeout = timeout;
+    uint8_t cmd;
+    struct device *wdg;
 
-    if (xSemaphoreTake(rx_sem, pdMS_TO_TICKS(timeout)) == pdTRUE) {
-        if (g_rx_buf_len) {
-            *recv_len = g_rx_buf_len;
-            g_rx_buf_len = 0;
-            rcv_buf = (uint32_t *)g_eflash_loader_readbuf[0];
+    wdg = device_find("wdg_rst");
+
+    if (ble_bl_conn == NULL) {
+        while (wait_new_conn_timeout) {
+            vTaskDelay(pdMS_TO_TICKS(20));
+            wait_new_conn_timeout -= 20;
+
+            if (wdg) {
+                device_control(wdg, DEVICE_CTRL_RST_WDT_COUNTER, NULL);
+            }
+
+            if (ble_bl_conn) {
+                break;
+            }
+        }
+    }
+
+    if (ble_bl_conn) {
+        while (timeout) {
+            timeout = timeout - 20;
+
+            if (wdg) {
+                device_control(wdg, DEVICE_CTRL_RST_WDT_COUNTER, NULL);
+            }
+
+            if (xSemaphoreTake(rx_sem, pdMS_TO_TICKS(20)) == pdTRUE) {
+                break;
+            }
+        }
+
+        if (timeout) {
+            if (g_rx_buf_len) {
+                *recv_len = g_rx_buf_len;
+                g_rx_buf_len = 0;
+                rcv_buf = (uint32_t *)&g_eflash_loader_readbuf[0][2];
+                cmd = *((uint8_t *)&g_eflash_loader_readbuf[0][2]);
+
+                if ((cmd == BFLB_EFLASH_LOADER_CMD_FLASH_ERASE) ||
+                        (cmd == BFLB_EFLASH_LOADER_CMD_RESET)) {
+                    timeout = 200;
+                    
+                    while (timeout) {
+                        timeout = timeout - 20;
+
+                        if (wdg) {
+                            device_control(wdg, DEVICE_CTRL_RST_WDT_COUNTER, NULL);
+                        }
+
+                        vTaskDelay(pdMS_TO_TICKS(20));
+                    }
+                }
+            } else {
+                bflb_eflash_loader_ble_send("NOK", sizeof("NOK"));
+            }
         } else {
-            bflb_eflash_loader_ble_send("NOK", sizeof("NOK"));
+            g_rx_buf_len = 0;
         }
     }
 
     return rcv_buf;
 }
 
+static void indicate_cb(struct bt_conn *conn, const struct bt_gatt_attr *attr,
+                        u8_t err)
+{
+    if (err != 0U) {
+        // vOutputString("Indication fail");
+        MSG("Indication fail %d\r\n", err);
+    } else {
+        MSG("Indication success\r\n");
+        // vOutputString("Indication success");
+    }
+
+    xSemaphoreGive(tx_sem);
+}
+
 int32_t bflb_eflash_loader_ble_send(uint32_t *data, uint32_t len)
 {
-    MSG("%s len %u\n", __FUNCTION__, len);
+    struct bt_gatt_indicate_params params;
+    struct device *wdg;
+    uint16_t timeout = 5000;
 
-    if (ble_bl_conn) {
-        rx_counter = 0;
-        return bt_gatt_notify(ble_bl_conn, &blattrs[1], (const void*)data, (uint16_t)len);
+    wdg = device_find("wdg_rst");
+
+    MSG("send len %u\r\n", len);
+
+    xSemaphoreTake(tx_sem, 0);
+
+    if ((ble_bl_conn) && (is_indicate_enabled)) {
+
+        memset(&params, 0, sizeof(struct bt_gatt_indicate_params));
+        params.attr = &blattrs[2];
+        params.data = data;
+        params.len = len;
+        params.func = indicate_cb;
+
+        if (!bt_gatt_indicate(ble_bl_conn, &params)) {
+            while (timeout) {
+                timeout = timeout - 20;
+
+                if (wdg) {
+                    device_control(wdg, DEVICE_CTRL_RST_WDT_COUNTER, NULL);
+                }
+
+                if (xSemaphoreTake(tx_sem, pdMS_TO_TICKS(20)) == pdTRUE) {
+                    break;
+                }
+            }
+
+            if (timeout) {
+                return 0;
+            }
+        }
     }
     
     return -1;

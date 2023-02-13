@@ -126,7 +126,7 @@ typedef enum tag_eflash_loader_error_code_t {
 #define BFLB_EFLASH_LOADER_EFUSE0_SIZE 128
 
 /*max data payload in command*/
-#define BFLB_EFLASH_LOADER_BLE_READBUF_SIZE     (4096 + 8)//(1024 * 16 + 8)
+#define BFLB_EFLASH_LOADER_BLE_READBUF_SIZE     (4096 + 1024)//(1024 * 16 + 8)
 #define BFLB_EFLASH_LOADER_READBUF_SIZE     (4096 + 8)//(1024 * 16 + 8)
 #define BFLB_EFLASH_LOADER_WRITEBUF_SIZE    BFLB_EFLASH_LOADER_READBUF_SIZE
 #define BFLB_EFLASH_LOADER_CMD_DATA_MAX_LEN (BFLB_EFLASH_LOADER_READBUF_SIZE - 0x04) //cmd+rsvd+len(2bytes)

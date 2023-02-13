@@ -52,6 +52,7 @@
 #include "bl702_sec_eng.h"
 #include "bl702_glb.h"
 #include "task.h"
+#include "hal_wdt.h"
 
 #define UART_DEBUG          1
 
@@ -62,7 +63,7 @@ static HeapRegion_t xHeapRegions[] = {
     { NULL, 0 }, /* Terminates the array. */
     { NULL, 0 }  /* Terminates the array. */
 };
-static StackType_t main_task_stack[1024];
+static StackType_t main_task_stack[2048];
 static StaticTask_t main_task_h;
 uint8_t *g_boot2_read_buf;
 boot2_image_config g_boot_img_cfg[2];
@@ -441,12 +442,25 @@ static void main_task(void *pvParameters)
     uint8_t *flash_cfg = NULL;
     uint32_t flash_cfg_len = 0;
     uint32_t boot_timeout = 1000 / 20;
+    struct device *wdg;
 
     bflb_eflash_loader_if_set(BFLB_EFLASH_LOADER_IF_BLE);
     bflb_eflash_loader_if_init();
 
     bflb_eflash_loader_if_set(BFLB_EFLASH_LOADER_IF_UART);
     bflb_eflash_loader_if_init();
+
+    wdt_register(WDT_INDEX, "wdg_rst");
+    wdg = device_find("wdg_rst");
+
+    if (wdg) {
+        uint32_t wdg_timeout = 0xFFFF;
+
+        device_control(wdg, DEVICE_CTRL_CLR_INT, NULL);
+        device_open(wdg, 0);
+        device_write(wdg, 0, &wdg_timeout, sizeof(wdg_timeout));
+        device_control(wdg, DEVICE_CTRL_SUSPEND, NULL);
+    }
 
     // simple_malloc_init(g_malloc_buf, sizeof(g_malloc_buf));
     g_boot2_read_buf = pvPortMalloc(BFLB_BOOT2_READBUF_SIZE);//vmalloc(BFLB_BOOT2_READBUF_SIZE);
@@ -497,7 +511,7 @@ static void main_task(void *pvParameters)
     pt_table_dump();
 
     if (g_app_rst_reason == 0xAABBCCDD) {
-        boot_timeout = 6000 / 20;
+        boot_timeout = 10000 / 20;
         g_app_rst_reason = 0;
     }
 
