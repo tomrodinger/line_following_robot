@@ -132,6 +132,7 @@ static void main_task(void *pvParameters)
 
     while(1) {
         robot_run();
+        ble_app_process();
     }
 }
 

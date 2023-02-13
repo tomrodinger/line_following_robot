@@ -22,7 +22,7 @@
 static struct bt_conn *ble_bl_conn = NULL;
 SemaphoreHandle_t tx_sem;
 static struct bt_gatt_exchange_params exchg_mtu;
-static bool is_ble_app_recv = false;
+static bool is_jump_bootloader = false;
 uint32_t g_app_rst_reason __attribute__((section(".AppSection")));
 
 #define MAGIC_CODE  "BL702BOOT"
@@ -31,20 +31,22 @@ static int ble_app_recv(struct bt_conn *conn,
               const struct bt_gatt_attr *attr, const void *buf,
               u16_t len, u16_t offset, u8_t flags)
 {
-    is_ble_app_recv = true;
-
-    if ((len == sizeof(MAGIC_CODE) - 1) && 
-            (!strncmp(buf, MAGIC_CODE, sizeof(MAGIC_CODE) - 1))) {
-        motor_run(STOP, 0);
-        g_app_rst_reason = 0xAABBCCDD;
-        __disable_irq();
-        GLB_SW_POR_Reset();
-        while (1) {
-            /*empty dead loop*/
-        }
+    /*If prepare write, it will return 0 */
+    if (flags == BT_GATT_WRITE_FLAG_PREPARE) {
+        return 0;
     }
 
-    return 0;
+    if (len != sizeof(MAGIC_CODE) - 1) {
+        return BT_GATT_ERR(BT_ATT_ERR_VALUE_NOT_ALLOWED);
+    }
+
+    if (strncmp(buf, MAGIC_CODE, sizeof(MAGIC_CODE) - 1)) {
+        return BT_GATT_ERR(BT_ATT_ERR_VALUE_NOT_ALLOWED);
+    }
+
+    is_jump_bootloader = true;
+
+    return len;
 }
 
 static void ble_app_cfg_changed(const struct bt_gatt_attr *attr, u16_t vblfue)
@@ -80,7 +82,6 @@ static void bl_connected(struct bt_conn *conn, uint8_t err)
             //exchange mtu size after connected.
             bt_gatt_exchange_mtu(ble_bl_conn, &exchg_mtu);
         }
-        is_ble_app_recv = false;
 	}
 }
 
@@ -99,7 +100,7 @@ static struct bt_gatt_attr blattrs[]= {
     BT_GATT_PRIMARY_SERVICE(BT_UUID_DECLARE_16(0xFFF0)),
 
     BT_GATT_CHARACTERISTIC(BT_UUID_DECLARE_128(BT_UUID_128_ENCODE(0x00070001, 0x0745, 0x4650, 0x8d93, 0xdf59be2fc10a)),
-                            BT_GATT_CHRC_READ | BT_GATT_CHRC_NOTIFY,
+                            BT_GATT_CHRC_READ | BT_GATT_CHRC_INDICATE,
                             BT_GATT_PERM_READ,
                             NULL,
                             NULL,
@@ -108,7 +109,7 @@ static struct bt_gatt_attr blattrs[]= {
     BT_GATT_CCC(ble_app_cfg_changed, BT_GATT_PERM_READ | BT_GATT_PERM_WRITE),
 
     BT_GATT_CHARACTERISTIC(BT_UUID_DECLARE_128(BT_UUID_128_ENCODE(0x00070002, 0x0745, 0x4650, 0x8d93, 0xdf59be2fc10a)),
-                            BT_GATT_CHRC_WRITE_WITHOUT_RESP,
+                            BT_GATT_CHRC_WRITE,
                             BT_GATT_PERM_WRITE,
                             NULL,
                             ble_app_recv,
@@ -202,12 +203,19 @@ bool ble_app_is_connected(void)
     return (ble_bl_conn != NULL);
 }
 
-bool ble_app_is_received(void)
+void ble_app_process(void)
 {
-    if (is_ble_app_recv) {
-        is_ble_app_recv = false;
-        return true;
-    }
+    
+    if (is_jump_bootloader) {
+        motor_run(STOP, 0);
 
-    return false;
+        vTaskDelay(pdMS_TO_TICKS(500));
+
+        g_app_rst_reason = 0xAABBCCDD;
+        __disable_irq();
+        GLB_SW_POR_Reset();
+        while (1) {
+            /*empty dead loop*/
+        }
+    }
 }
