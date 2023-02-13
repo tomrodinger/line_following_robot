@@ -39,7 +39,7 @@
 #define BSP_USING_PWM_CH4
 #define BSP_USING_TIMER0
 #define BSP_USING_TIMER1
-// #define BSP_USING_WDT
+#define BSP_USING_WDT
 // #define BSP_USING_KEYSCAN
 // #define BSP_USING_QDEC0
 // #define BSP_USING_QDEC1

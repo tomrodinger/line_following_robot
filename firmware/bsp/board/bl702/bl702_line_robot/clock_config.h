@@ -53,7 +53,7 @@
 #define BSP_TIMER1_CLOCK_DIV    0
 #endif
 #if defined(BSP_USING_WDT)
-#define BSP_WDT_CLOCK_SOURCE ROOT_CLOCK_SOURCE_FCLK
+#define BSP_WDT_CLOCK_SOURCE ROOT_CLOCK_SOURCE_32K_CLK
 #define BSP_WDT_CLOCK_DIV    0
 #endif
 #if defined(BSP_USING_PWM_CH0) || defined(BSP_USING_PWM_CH1) || defined(BSP_USING_PWM_CH2) || defined(BSP_USING_PWM_CH3) || defined(BSP_USING_PWM_CH4) || defined(BSP_USING_PWM_CH5)
