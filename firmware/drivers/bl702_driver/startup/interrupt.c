@@ -240,6 +240,10 @@ void Trap_Handler(void)
             break;
     }
 
+#ifdef TRAP_RESET
+    GLB_SW_POR_Reset();
+#endif
+
     if (!isecall) {
         while (1)
             ;
