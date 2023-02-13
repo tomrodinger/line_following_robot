@@ -121,7 +121,7 @@ int wdt_control(struct device *dev, int cmd, void *args)
 int wdt_write(struct device *dev, uint32_t pos, const void *buffer, uint32_t size)
 {
     // wdt_device_t *wdt_device = (wdt_device_t *)dev;
-    uint16_t wdt_timeout = (uint16_t)(uint32_t)buffer;
+    uint16_t wdt_timeout = *((uint16_t*)buffer);
 
     WDT_Disable();
     WDT_SetCompValue(wdt_timeout);
