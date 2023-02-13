@@ -295,12 +295,12 @@ async def ble_process(fw_data, addr):
             rx_queue.get()
         
     async def get_response_ble(device):
-        timeout = 0.05
+        timeout = 5
         while rx_queue.empty():
-            timeout = timeout - 0.001
+            timeout = timeout - 1
             if timeout == 0:
                 break
-            await asyncio.sleep(0.001)
+            await asyncio.sleep(1)
         
         if timeout == 0:
             print("Did not receive response from BLE device")
@@ -320,20 +320,15 @@ async def ble_process(fw_data, addr):
         return 0
 
     async def write_data(device, buf):
-        rx_counter = 0
-        while len(buf) > 0:
+        send_data = len(buf).to_bytes(2, "little") + buf
+
+        while len(send_data) > 0:
             if not rx_queue.empty():
                 return -1
+            start = time.time()
+            await device.write_gatt_char(write_handle, send_data[0 : 240], True)
 
-            if len(buf) > 240:
-                header = rx_counter
-            else:
-                header = 0x80
-            await device.write_gatt_char(write_handle, header.to_bytes(1, "little") + buf[0 : 240])
-            rx_counter = rx_counter + 1
-            if rx_counter >= 128:
-                rx_counter = 0
-            buf = buf[240: ]
+            send_data = send_data[240: ]
         return 0
 
     async def program_one_page_ble(device, addr, data):
@@ -410,7 +405,7 @@ async def ble_process(fw_data, addr):
                                 write_handle = char
                     if write_handle is not None:
                         data = MAGIC_CODE.encode()
-                        await client.write_gatt_char(write_handle, data)
+                        await client.write_gatt_char(write_handle, data, True)
                         is_success = True
             except Exception as e:
                 print("Cannot connect device with error as {}".format(e))
@@ -447,7 +442,7 @@ async def ble_process(fw_data, addr):
                             await client.start_notify(read_handle, notification_handler)
                             await asyncio.sleep(0.5)
                             
-                            FLASH_PAGE_SIZE = 1024
+                            FLASH_PAGE_SIZE = 2048
                             start_addr = FLASH_START_ADDRESS
                             while len(program_data) > 0:
                                 print("Size left:", len(program_data))
