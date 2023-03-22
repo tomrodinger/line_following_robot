@@ -1,0 +1,3 @@
+(sym_lib_table
+  (lib (name "BL706 Robot")(type "KiCad")(uri "${KIPRJMOD}/BL706 Robot.kicad_sym")(options "")(descr ""))
+)
