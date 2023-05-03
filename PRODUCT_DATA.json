@@ -1,7 +1,7 @@
 {
     "model": "R1",
     "versions": [
-        "version": "V1"
+        "version": "V10"
         "type": "full_product",
         "web_page_template": "template.html",
         "picture": "Robot_R1_picture.jpg",
