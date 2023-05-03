@@ -1,39 +1,91 @@
-{
-    "model": "R1",
-    "versions": [
-        "version": "V1"
-        "type": "full_product",
-        "web_page_template": "template.html",
-        "picture": "Robot_R1_picture.jpg",
-        "description": "This is a robot that follows a line. Multiple robots can share a track, communicate, and avoid collisions.",
-        "schamatic" : "line_following_robot_schamatic.jpg",
-        "user_manual": "NA.pdf",
-        "tutorial": "NA",
-        "firmwares": [
+[
+    {
+        "product": "R1",
+        "versions": [
             {
-            "version": "0.2.3",
-            "compatibility": 0,
-            "date": "September 29, 2022",
-            "description": "A firmware for the Robot",
-            "url": "robot_application.bin",
-            "sha256": "43f6df3f42ae0582b1331c3ebc3eec1662dc2a7740039b04128bb06d5931dac9"
-            },
-            {
-            "version": "0.2.3",
-            "compatibility": 0,
-            "date": "September 29, 2022",
-            "description": "Robot can follow a line. No audio playing.",
-            "url": "robot_application_medium_volume.bin",
-            "sha256": "42bc5b4df78ad032ab15f4badfa974cfbd40519554dcdd277b5994c3bcc4ed25"
-            },
-            {
-            "version": "0.2.3",
-            "compatibility": 0,
-            "date": "September 29, 2022",
-            "description": "Robot can follow a line. No audio playing.",
-            "url": "robot_application_no_audio.bin",
-            "sha256": "b1374c3d764bb456661480f8d7fb871967202f30528dc16ed80daefd17b34945"
+                "version": "V1",
+                "type": "full_product",
+                "web_page_template": "https://raw.githubusercontent.com/vladsomai/test_line_following_robot/main/Products/dark_template.html",
+                "picture": "https://raw.githubusercontent.com/vladsomai/test_line_following_robot/main/Products/R1/V1/robot.jpg",
+                "description": "This is a robot that follows a line. Multiple robots can share a track, communicate, and avoid collisions.",
+                "schamatic": "https://raw.githubusercontent.com/tomrodinger/line_following_robot/main/PCB/V10/schematic.pdf",
+                "user_manual": "https://raw.githubusercontent.com/vladsomai/test_line_following_robot/main/Products/R1/V1/user-manual.pdf",
+                "tutorial": "https://servo-tutorial.netlify.app/",
+                "github": "https://github.com/tomrodinger/line_following_robot/tree/main/PCB/V10",
+                "firmwares": [
+                    {
+                        "version": "0.2.3",
+                        "compatibility": 0,
+                        "date": "September 9, 2021",
+                        "description": "Initial firmware for the Robot",
+                        "url": "https://raw.githubusercontent.com/vladsomai/test_line_following_robot/main/Products/R1/firmware/0.2.3.firmware",
+                        "sha256": "43f6df3f42ae0582b1331c3ebc3eec1662dc2a7740039b04128bb06d5931dac9"
+                    },
+                    {
+                        "version": "0.2.4",
+                        "compatibility": 0,
+                        "date": "September 2, 2022",
+                        "description": "Robot can now follow a line. No audio playing.",
+                        "url": "https://raw.githubusercontent.com/vladsomai/test_line_following_robot/main/Products/R1/firmware/0.2.4.firmware",
+                        "sha256": "42bc5b4df78ad032ab15f4badfa974cfbd40519554dcdd277b5994c3bcc4ed25"
+                    },
+                    {
+                        "version": "0.2.5",
+                        "compatibility": 0,
+                        "date": "September 29, 2023",
+                        "description": "Fixed oject detection bug.",
+                        "url": "https://raw.githubusercontent.com/vladsomai/test_line_following_robot/main/Products/R1/firmware/0.2.5.firmware",
+                        "sha256": "b1374c3d764bb456661480f8d7fb871967202f30528dc16ed80daefd17b34945"
+                    }
+                ]
             }
         ]
-    ]
-}
+    },
+    {
+        "product": "R2",
+        "versions": [
+            {
+                "version": "V1",
+                "type": "partial_product",
+                "web_page_template": "https://raw.githubusercontent.com/vladsomai/test_line_following_robot/main/Products/light_template.html",
+                "picture": "https://raw.githubusercontent.com/vladsomai/test_line_following_robot/main/Products/R2/V1/pcb_picture_side.jpg",
+                "description": "This product is able to control a servo motor",
+                "schamatic": "https://raw.githubusercontent.com/tomrodinger/line_following_robot/main/PCB/V10/schematic.pdf",
+                "user_manual": "https://raw.githubusercontent.com/vladsomai/test_line_following_robot/main/Products/R2/V1/user-manual.pdf",
+                "tutorial": "https://servo-tutorial.netlify.app/",
+                "github": "https://github.com/tomrodinger/line_following_robot/tree/main/PCB/V10",
+                "firmwares": [
+                    {
+                        "version": "0.2.3",
+                        "compatibility": 0,
+                        "date": "September 29, 2022",
+                        "description": "Initial firmware for the servo motor",
+                        "url": "https://raw.githubusercontent.com/vladsomai/test_line_following_robot/main/Products/R2/firmware/servo-motor-fw.firmware",
+                        "sha256": "43f6df3f42ae0582b1331c3ebc3eec1662dc2a7740039b04128bb06d5931dac9"
+                    }
+                ]
+            },
+            {
+                "version": "V2",
+                "type": "partial_product",
+                "web_page_template": "https://raw.githubusercontent.com/vladsomai/test_line_following_robot/main/Products/light_template.html",
+                "picture": "https://raw.githubusercontent.com/vladsomai/test_line_following_robot/main/Products/R2/V2/pcb_picture_top.jpg",
+                "description": "This product is able to control a servo motor, improved performance",
+                "schamatic": "https://raw.githubusercontent.com/tomrodinger/line_following_robot/main/PCB/V10/schematic.pdf",
+                "user_manual": "https://raw.githubusercontent.com/vladsomai/test_line_following_robot/main/Products/R2/V2/user-manual.pdf",
+                "tutorial": "https://servo-tutorial.netlify.app/",
+                "github": "https://github.com/tomrodinger/line_following_robot/tree/main/PCB/V10",
+                "firmwares": [
+                    {
+                        "version": "0.2.3",
+                        "compatibility": 0,
+                        "date": "September 29, 2022",
+                        "description": "Initial firmware for the servo motor",
+                        "url": "https://raw.githubusercontent.com/vladsomai/test_line_following_robot/main/Products/R2/firmware/servo-motor-fw.bin",
+                        "sha256": "43f6df3f42ae0582b1331c3ebc3eec1662dc2a7740039b04128bb06d5931dac9"
+                    }
+                ]
+            }
+        ]
+    }
+]
