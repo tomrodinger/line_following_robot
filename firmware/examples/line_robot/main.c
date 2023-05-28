@@ -32,6 +32,7 @@
 #include "task.h"
 #include "ble_app.h"
 #include "audio.h"
+#include "ir.h"
 
 static StackType_t main_stack[1024];
 static StaticTask_t main_task_handle;
@@ -127,6 +128,7 @@ void vApplicationGetTimerTaskMemory(StaticTask_t **ppxTimerTaskTCBBuffer, StackT
 
 static void main_task(void *pvParameters)
 {
+    ir_init();
     ble_app_init();
     robot_init();
 
@@ -155,7 +157,7 @@ int main(void)
 
     vPortDefineHeapRegions(xHeapRegions);
 
-    audio_init();
+    // audio_init();
 
     xTaskCreateStatic(main_task, (char *)"main", sizeof(main_stack) / 4, NULL, configMAX_PRIORITIES - 1, main_stack, &main_task_handle);
 

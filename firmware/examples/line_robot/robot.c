@@ -41,11 +41,11 @@ void robot_run(void)
 {
     static uint32_t center_base[2] = {0};
     uint32_t center_data[2];
-    uint32_t calib_data[4];
     int32_t left_diff, right_diff;
     static uint32_t prev_diff_speed = 0;
     int left_speed, right_speed;
     static bool is_calib = false;
+    sensor_t sen_data;
 
     if ((bflb_platform_get_time_ms() - prev_calib_time) >= 5000) {
         if (prev_diff_speed <= 40) {
@@ -61,29 +61,53 @@ void robot_run(void)
         vTaskDelay(pdMS_TO_TICKS(120));
         motor_run(STOP, 0);
         vTaskDelay(pdMS_TO_TICKS(100));
-        sensor_read_data(&calib_data[0], CALIBRATION_SAMPLES);
+        while (!sensor_is_ready()) {
+            vTaskDelay(pdMS_TO_TICKS(2));
+        }
+        sensor_read_data(&sen_data);
+        while (!sensor_is_ready()) {
+            vTaskDelay(pdMS_TO_TICKS(2));
+        }
+        sensor_read_data(&sen_data);
+        center_base[SENSOR_LEFT_IDX] = sen_data.left;
 
         motor_run(CIRCLE_RIGHT, 80);
         vTaskDelay(pdMS_TO_TICKS(240));
         motor_run(STOP, 0);
         vTaskDelay(pdMS_TO_TICKS(100));
-        sensor_read_data(&calib_data[2], CALIBRATION_SAMPLES);
+        while (!sensor_is_ready()) {
+            vTaskDelay(pdMS_TO_TICKS(2));
+        }
+        sensor_read_data(&sen_data);
+        while (!sensor_is_ready()) {
+            vTaskDelay(pdMS_TO_TICKS(2));
+        }
+        sensor_read_data(&sen_data);
+        center_base[SENSOR_RIGHT_IDX] = sen_data.right;
 
         motor_run(CIRCLE_LEFT, 80);
         vTaskDelay(pdMS_TO_TICKS(130));
         motor_run(STOP, 0);
         vTaskDelay(pdMS_TO_TICKS(100));
 
-        center_base[0] = calib_data[0];
-        center_base[1] = calib_data[3];
         is_calib = true;
+    }
+
+    if (sensor_is_robot_detection()) {
+        motor_run(STOP, 0);
+        do {
+            vTaskDelay(pdMS_TO_TICKS(5000));
+        } while (sensor_is_robot_detection());
+
+        is_calib = false;
+        return;
     }			
 
-    sensor_read_data(center_data, CALIBRATION_SAMPLES);
+    if (sensor_is_ready()) {
+        sensor_read_data(&sen_data);
+        center_data[SENSOR_LEFT_IDX] = sen_data.left;
+        center_data[SENSOR_RIGHT_IDX] = sen_data.right;
 
-    if (center_base[0] == 0) {
-        memcpy(center_base, center_data, sizeof(center_data));
-    } else {
         left_diff = center_data[SENSOR_LEFT_IDX] - center_base[SENSOR_LEFT_IDX];
         right_diff = center_data[SENSOR_RIGHT_IDX] - center_base[SENSOR_RIGHT_IDX];
 
@@ -122,5 +146,7 @@ void robot_run(void)
 
         motor_run_manual(right_speed, left_speed);
         vTaskDelay(pdMS_TO_TICKS(20));
+    } else {
+        vTaskDelay(pdMS_TO_TICKS(1));
     }
 }

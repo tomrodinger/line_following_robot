@@ -71,6 +71,8 @@ int pwm_open(struct device *dev, uint16_t oflag)
     BL_WR_REG(PWMx, PWM_THRE2, pwm_device->threshold_high);
     BL_WR_REG(PWMx, PWM_PERIOD, pwm_device->period);
 
+    pwm_device->is_stop = 1;
+
     if (oflag & DEVICE_OFLAG_INT_TX) {
         tmpVal = BL_RD_REG(PWMx, PWM_INTERRUPT);
         BL_WR_REG(PWMx, PWM_INTERRUPT, BL_SET_REG_BITS_VAL(tmpVal, PWM_INT_PERIOD_CNT, pwm_device->it_pulse_count));
@@ -97,11 +99,14 @@ int pwm_control(struct device *dev, int cmd, void *args)
         case DEVICE_CTRL_CONFIG /* constant-expression */:
             break;
         case DEVICE_CTRL_RESUME /* constant-expression */:
+            PWM_SW_Mode(pwm_device->ch, DISABLE);
             PWM_Channel_Enable(pwm_device->ch);
+            pwm_device->is_stop = 0;
             break;
 
         case DEVICE_CTRL_SUSPEND /* constant-expression */:
             PWM_Channel_Disable(pwm_device->ch);
+            pwm_device->is_stop = 1;
             break;
         case DEVICE_CTRL_PWM_FREQUENCE_CONFIG:
 
@@ -130,6 +135,15 @@ int pwm_control(struct device *dev, int cmd, void *args)
 
             break;
         }
+        case DEVICE_CTRL_PWM_SUSPEND_HIGH: {
+            PWM_Channel_Disable(pwm_device->ch);
+            PWM_SW_Mode(pwm_device->ch, ENABLE);
+            PWM_SW_Force_Value(pwm_device->ch, 1);
+            pwm_device->is_stop = 1;
+            break;
+        }
+        case DEVICE_CTRL_PWM_GET_STATE:
+            return pwm_device->is_stop;
 
         default:
             break;

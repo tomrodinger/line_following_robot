@@ -23,6 +23,7 @@ set(TARGET_REQUIRED_SRCS
     ${CMAKE_CURRENT_LIST_DIR}/sensor.c
     ${CMAKE_CURRENT_LIST_DIR}/motor.c
     ${CMAKE_CURRENT_LIST_DIR}/robot.c
+    ${CMAKE_CURRENT_LIST_DIR}/ir.c
     ${CMAKE_CURRENT_LIST_DIR}/pid.c
     ${CMAKE_CURRENT_LIST_DIR}/ble_app.c
     ${CMAKE_CURRENT_LIST_DIR}/mp3_data.c

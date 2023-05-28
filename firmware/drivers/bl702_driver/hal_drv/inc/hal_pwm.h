@@ -34,6 +34,8 @@ extern "C"{
 #define DEVICE_CTRL_PWM_FREQUENCE_CONFIG      0x10
 #define DEVICE_CTRL_PWM_DUTYCYCLE_CONFIG      0x11
 #define DEVICE_CTRL_PWM_IT_PULSE_COUNT_CONFIG 0x12
+#define DEVICE_CTRL_PWM_SUSPEND_HIGH          0x13
+#define DEVICE_CTRL_PWM_GET_STATE             0x14
 
 enum pwm_index_type {
 #ifdef BSP_USING_PWM_CH0
@@ -78,6 +80,7 @@ typedef struct pwm_device {
     uint16_t threshold_low;
     uint16_t threshold_high;
     uint16_t it_pulse_count;
+    uint8_t is_stop;
 
 } pwm_device_t;
 
