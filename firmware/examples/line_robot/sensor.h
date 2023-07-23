@@ -1,21 +1,16 @@
 #ifndef SENSOR_H
 #define SENSOR_H
 
-typedef enum {
-    SENSOR_LEFT_IDX = 0,
-    SENSOR_RIGHT_IDX,
-    SENSOR_IR_IDX,
-    SENSOR_MAX
-} sensor_idx_t;
-
 typedef struct {
     uint32_t left;
     uint32_t right;
-} sensor_t;
+} sensor_light_t;
 
 void sensor_init(void);
-int sensor_is_ready(void);
-void sensor_read_data(sensor_t *sen_data);
-int sensor_is_robot_detection(void);
+void sensor_light_read(sensor_light_t *sen_val, uint32_t sample_num);
+void sensor_ir_start_measure(void);
+bool sensor_ir_is_robot_detect(void);
+bool sensor_ir_is_measuring(void);
+int sensor_ir_store_calib(void);
 
 #endif
