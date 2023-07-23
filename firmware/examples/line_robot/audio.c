@@ -33,7 +33,7 @@ static StaticTask_t audio_task_handle;
 #define MEDIUM_VOLUME   1
 #define MAX_VOLUME      2
 
-#define AUDIO_VOLUME    MEDIUM_VOLUME
+#define AUDIO_VOLUME    MAX_VOLUME
 
 #if AUDIO_VOLUME == LOW_VOLUME
 #define AUDIO_MAX_BITS  8

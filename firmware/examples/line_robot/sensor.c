@@ -25,7 +25,7 @@ static int ir_sen_data[SENSOR_IR_RAW_SIZE];
 static float complex ir_sen_fdata[SENSOR_IR_RAW_SIZE];
 static volatile int ir_sen_fdata_mag[4];
 static volatile int ir_sen_fdata_prev_mag[4] = {0};
-static StackType_t sensor_stack[2048];
+static StackType_t sensor_stack[512];
 static StaticTask_t sensor_task_handle;
 
 #define PI 3.14159265358979323846
@@ -146,6 +146,7 @@ void sensor_init(void)
         device_open(dma_sensor, 0);
     }
 
+    device_control(dma_sensor, DEVICE_CTRL_SET_INT, NULL);
     device_set_callback(dma_sensor, sensor_ir_dma_done);
 
     xTaskCreateStatic(sensor_ir_processing_task, (char *)"sensor", sizeof(sensor_stack) / 4, NULL, configMAX_PRIORITIES - 4, sensor_stack, &sensor_task_handle);

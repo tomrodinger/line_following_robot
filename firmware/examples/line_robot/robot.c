@@ -14,6 +14,9 @@
 #define LED_R_0  GPIO_PIN_22
 #define LED_R_1  GPIO_PIN_0
 
+#define LED_G_0  GPIO_PIN_24
+#define LED_G_1  GPIO_PIN_2
+
 // Structure to strore PID data and pointer to PID structure
 struct pid_controller ctrldata;
 pid_control_t pid;
@@ -44,6 +47,11 @@ void robot_init(void)
     gpio_write(LED_R_0, 1);
     gpio_set_mode(LED_R_1, GPIO_OUTPUT_PP_MODE);
     gpio_write(LED_R_1, 1);
+
+    gpio_set_mode(LED_G_0, GPIO_OUTPUT_PP_MODE);
+    gpio_write(LED_G_0, 1);
+    gpio_set_mode(LED_G_1, GPIO_OUTPUT_PP_MODE);
+    gpio_write(LED_G_1, 1);
 }
 
 void robot_run(void)
@@ -74,32 +82,35 @@ void robot_run(void)
             }
         } while (!sensor_ir_store_calib());
         
-        motor_run(CIRCLE_LEFT, 35);
+        motor_run(CIRCLE_LEFT, 45);
         while(1) {
             sensor_light_read(&sen_light_val, CALIBRATION_SAMPLES);
             if ((sen_light_val.left > sen_light_val.right) &&
                     ((sen_light_val.left - sen_light_val.right) >= 100)) {
                 break;
             }
+            vTaskDelay(pdMS_TO_TICKS(1));
         }
         sen_light_calib_val.left = sen_light_val.left;
 
-        motor_run(CIRCLE_RIGHT, 35);
+        motor_run(CIRCLE_RIGHT, 45);
         while(1) {
             sensor_light_read(&sen_light_val, CALIBRATION_SAMPLES);
             if ((sen_light_val.right > sen_light_val.left) &&
                     ((sen_light_val.right - sen_light_val.left) >= 100)) {
                 break;
             }
+            vTaskDelay(pdMS_TO_TICKS(1));
         }
         sen_light_calib_val.right = sen_light_val.right;
 
-        motor_run(CIRCLE_LEFT, 35);
+        motor_run(CIRCLE_LEFT, 45);
         while(1) {
             sensor_light_read(&sen_light_val, CALIBRATION_SAMPLES);
             if (abs(sen_light_val.left - sen_light_val.right) <= 20) {
                 break;
             }
+            vTaskDelay(pdMS_TO_TICKS(1));
         }
         motor_run(STOP, 0);
         vTaskDelay(pdMS_TO_TICKS(50));
@@ -157,6 +168,10 @@ void robot_run(void)
         max_speed = 60;
     }
 
+    if (prev_diff_speed >= 20) {
+        max_speed = 70;
+    }
+
     left_speed = (left_speed * max_speed) / 100;
     right_speed = (right_speed * max_speed) / 100;
 
@@ -176,6 +191,8 @@ void robot_run(void)
     }
 
     if ((is_robot_detect) || (sensor_ir_is_robot_detect())) {
+        gpio_write(LED_G_0, 1);
+        gpio_write(LED_G_1, 1);
         gpio_write(LED_R_0, 0);
         gpio_write(LED_R_1, 0);
         motor_run(STOP, 0);
@@ -209,7 +226,7 @@ void robot_run(void)
                 sensor_light_read(&sen_light_val, CALIBRATION_SAMPLES);
 
                 if ((sen_light_val.left < sen_light_val.right) &&
-                        ((sen_light_val.right - sen_light_val.left) >= 100)) {
+                        ((sen_light_val.right - sen_light_val.left) >= 150)) {
                     break;
                 }
             }
@@ -222,6 +239,8 @@ void robot_run(void)
             prev_calib_time = bflb_platform_get_time_ms();
         }
     } else {
+        gpio_write(LED_G_0, 0);
+        gpio_write(LED_G_1, 0);
         gpio_write(LED_R_0, 1);
         gpio_write(LED_R_1, 1);
     }

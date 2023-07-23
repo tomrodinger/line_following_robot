@@ -157,7 +157,7 @@ int main(void)
 
     vPortDefineHeapRegions(xHeapRegions);
 
-    // audio_init();
+    audio_init();
 
     xTaskCreateStatic(main_task, (char *)"main", sizeof(main_stack) / 4, NULL, configMAX_PRIORITIES - 1, main_stack, &main_task_handle);
 
