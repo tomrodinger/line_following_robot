@@ -9,25 +9,28 @@
 #include "mp3dec.h"
 #include "mp3_data.h"
 #include "motor.h"
+#include "ring_buffer.h"
 
-#define READBUF_SIZE		(2000)	/* feel free to change this, but keep big enough for >= one frame at high bitrates */
+#define READBUF_SIZE		(1940)	/* feel free to change this, but keep big enough for >= one frame at high bitrates */
 #define MAX_ARM_FRAMES		100
 #define ARMULATE_MUL_FACT	1
 
 #define AUDIO_SHUTDOWN_PIN  GPIO_PIN_6
 
 static uint32_t audio_file_idx = 0;
-static uint32_t pcm_length = 0;
-static uint8_t pcm_dma_idx = 0;
 static struct device *dac;
 static struct device *dac_dma;
 static SemaphoreHandle_t dma_done_sem;
 static unsigned char readBuf[READBUF_SIZE];
 static short outBuf[MAX_NGRAN * MAX_NSAMP];
-static short pcm_out[2][MAX_NGRAN * MAX_NSAMP];
+static short pcm_out[MAX_NSAMP];
+static short audio_rb_buf[MAX_NGRAN * MAX_NSAMP * 1];
 HMP3Decoder hMP3Decoder;
 static StackType_t audio_stack[512];
 static StaticTask_t audio_task_handle;
+static Ring_Buffer_Type audio_rb;
+
+#define AUDIO_VOLUME_MAX_GAIN   10
 
 #define LOW_VOLUME      0
 #define MEDIUM_VOLUME   1
@@ -52,12 +55,16 @@ typedef enum {
 static void dma_transfer_done(struct device *dev, void *args, uint32_t size, uint32_t state)
 {
     BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-    
-    if (pcm_length) {
-        device_write(dac, DAC_CHANNEL_1, &pcm_out[pcm_dma_idx][0], pcm_length);
-        pcm_length = 0;
-        xSemaphoreGiveFromISR(dma_done_sem, &xHigherPriorityTaskWoken );
+
+    if (Ring_Buffer_Get_Length(&audio_rb)) {
+        uint32_t avalibleCnt = Ring_Buffer_Read(&audio_rb, (uint8_t*)pcm_out, sizeof(pcm_out));
+
+        if (avalibleCnt) {
+            device_write(dac, DAC_CHANNEL_1, pcm_out, avalibleCnt);
+        }
     }
+
+    xSemaphoreGiveFromISR(dma_done_sem, &xHigherPriorityTaskWoken );
 }
 
 static int FillReadBuffer(unsigned char *readBuf, unsigned char *readPtr, int bufSize, int bytesLeft)
@@ -99,6 +106,10 @@ static void audio_to_10_bit(short *in, short *out, int count)
 
     mul = 32768 / max;
     idx = 0;
+
+    if (mul >= AUDIO_VOLUME_MAX_GAIN) {
+        mul = AUDIO_VOLUME_MAX_GAIN;
+    } 
        
     while(idx < count) { 
         i = (short)((float)(in[idx]) * mul);
@@ -207,6 +218,16 @@ void audio_run(void)
 }
 #endif
 
+static void ringbuffer_lock()
+{
+    
+}
+
+static void ringbuffer_unlock()
+{
+    
+}
+
 static void audio_task(void *pvParameters)
 {
     audio_state_t audio_state = AUDIO_STATE_INIT;
@@ -214,20 +235,27 @@ static void audio_task(void *pvParameters)
     unsigned char *readPtr;
     MP3FrameInfo mp3FrameInfo;
     int nRead, err, offset;
+    uint32_t avail_cnt;
 
     hMP3Decoder = MP3InitDecoder();
+    Ring_Buffer_Init(&audio_rb, (uint8_t*)audio_rb_buf, sizeof(audio_rb_buf), ringbuffer_lock, ringbuffer_unlock);
 
     while(1) {
         switch(audio_state) {
             case AUDIO_STATE_INIT:
+                if (dma_channel_check_busy(dac_dma) == SET) {
+                    do {
+                        vTaskDelay(pdMS_TO_TICKS(100));
+                    } while (Ring_Buffer_Get_Length(&audio_rb));
+                }
+
+                xSemaphoreTake(dma_done_sem, 0);
+
                 bytesLeft = 0;
                 eofReached = 0;
                 nRead = 0;
                 audio_file_idx = 0;
-                pcm_length = 0;
-                pcm_dma_idx = 0;
                 readPtr = readBuf;
-
                 audio_state = AUDIO_STATE_LOAD_DATA;
                 break;
             case AUDIO_STATE_LOAD_DATA:
@@ -269,23 +297,21 @@ static void audio_task(void *pvParameters)
                 } else {
                     /* no error */
                     MP3GetLastFrameInfo(hMP3Decoder, &mp3FrameInfo);
-                    audio_to_10_bit(outBuf, &pcm_out[pcm_dma_idx][0], mp3FrameInfo.outputSamps);
+                    audio_to_10_bit(outBuf, outBuf, mp3FrameInfo.outputSamps);
+
+                    if ((mp3FrameInfo.outputSamps * 2) > Ring_Buffer_Get_Empty_Length(&audio_rb)) {
+                        do {
+                            xSemaphoreTake(dma_done_sem, portMAX_DELAY);
+                        } while ((mp3FrameInfo.outputSamps * 2) > Ring_Buffer_Get_Empty_Length(&audio_rb));
+                    }
+
+                    Ring_Buffer_Write(&audio_rb, (uint8_t *)outBuf, mp3FrameInfo.outputSamps * 2);
 
                     if (dma_channel_check_busy(dac_dma) != SET) {
-                        device_write(dac, DAC_CHANNEL_1, &pcm_out[pcm_dma_idx][0], mp3FrameInfo.outputSamps * 2);
-                        pcm_dma_idx++;
-                        if (pcm_dma_idx >= 2) pcm_dma_idx = 0;
-                    } else {
-                        pcm_length = mp3FrameInfo.outputSamps * 2;
-                        audio_state = AUDIO_STATE_WAIT_DMA;
+                        avail_cnt = Ring_Buffer_Read(&audio_rb, (uint8_t*)pcm_out, sizeof(pcm_out));
+                        device_write(dac, DAC_CHANNEL_1, pcm_out, avail_cnt);
                     }
                 }
-                break;
-            case AUDIO_STATE_WAIT_DMA:
-                xSemaphoreTake(dma_done_sem, portMAX_DELAY);
-                audio_state = AUDIO_STATE_LOAD_DATA;
-                pcm_dma_idx++;
-                if (pcm_dma_idx >= 2) pcm_dma_idx = 0;
                 break;
             default:
                 break;
