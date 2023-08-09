@@ -3,7 +3,7 @@
   - version: V10
     type: full_product
     web_page_template: https://raw.githubusercontent.com/vladsomai/test_line_following_robot/main/Products/dark_template.html
-    picture: https://raw.githubusercontent.com/tomrodinger/servomotor/main/Pictures/top%201.jpg
+    picture: https://raw.githubusercontent.com/tomrodinger/line_following_robot/main/Pictures/top%201.jpg
     description: This is a robot that follows a line. Multiple robots can share a track, communicate, and avoid collisions.
     schematic: https://raw.githubusercontent.com/tomrodinger/line_following_robot/main/PCB/V10/schematic.pdf
     user_manual: https://raw.githubusercontent.com/vladsomai/test_line_following_robot/main/Products/R1/V1/user-manual.pdf
