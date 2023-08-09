@@ -65,7 +65,7 @@
     {                                                      \
         .clk_div = ADC_CLOCK_DIV_16,                       \
         .vref = ADC_VREF_2V,                              \
-        .continuous_conv_mode = ENABLE,                   \
+        .continuous_conv_mode = DISABLE,                   \
         .differential_mode = DISABLE,                      \
         .data_width = ADC_DATA_WIDTH_14B_WITH_16_AVERAGE, \
         .fifo_threshold = ADC_FIFO_THRESHOLD_1BYTE,        \

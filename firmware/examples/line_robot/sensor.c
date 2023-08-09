@@ -8,24 +8,25 @@
 #include "hal_gpio.h"
 #include "sensor.h"
 
-#define ADC_CHANNEL 3
-#define ADC_CHANNEL_BUFFER_SIZE 128
-#define ADC_MAX_BUFFER_SIZE     (ADC_CHANNEL_BUFFER_SIZE * ADC_CHANNEL)
+#define SENSOR_LIGHT_CHAN_NUM   2
+#define SENSOR_IR_CHAN_NUM      1
 
-struct device *adc_sensor;
-struct device *dma_sensor;
-static uint32_t adc_raw_data[ADC_MAX_BUFFER_SIZE];
-static int ir_sen_data[ADC_CHANNEL_BUFFER_SIZE];
-static float complex ir_sen_fdata[ADC_CHANNEL_BUFFER_SIZE];
-static int ir_sen_fdata_mag[4];
-static int ir_sen_fdata_prev_mag[4];
+#define SENSOR_IR_RAW_SIZE      128
+#define SENSOR_IR_DETECT_THRESHOLD  70
+
+static struct device *adc_sensor;
+static struct device *dma_sensor;
+static volatile bool sensor_ir_is_sampling = false;
+static volatile bool sensor_ir_is_processing = false;
+static volatile bool sensor_ir_is_detect = false;
 static SemaphoreHandle_t dma_done_sem;
-static SemaphoreHandle_t robot_detect_sem;
+static uint32_t sensor_ir_raw[SENSOR_IR_RAW_SIZE];
+static int ir_sen_data[SENSOR_IR_RAW_SIZE];
+static float complex ir_sen_fdata[SENSOR_IR_RAW_SIZE];
+static volatile int ir_sen_fdata_mag[4];
+static volatile int ir_sen_fdata_prev_mag[4] = {0};
 static StackType_t sensor_stack[512];
 static StaticTask_t sensor_task_handle;
-static uint8_t sensor_queue[1 * sizeof(sensor_t)];
-static StaticQueue_t sensor_st_queue;
-static QueueHandle_t sensor_queue_hdl;
 
 #define PI 3.14159265358979323846
 
@@ -57,103 +58,79 @@ static void fft(int* x, float complex* X, unsigned int N) {
 #undef I
 #include "hal_dma.h"
 
-static void dma_sensor_transfer_done(struct device *dev, void *args, uint32_t size, uint32_t state)
+static void sensor_ir_dma_done(struct device *dev, void *args, uint32_t size, uint32_t state)
 {
     BaseType_t xHigherPriorityTaskWoken = pdFALSE;
 
     xSemaphoreGiveFromISR(dma_done_sem, &xHigherPriorityTaskWoken );
 }
 
-static void sensor_task(void *pvParameters)
+static void sensor_ir_processing_task(void *pvParameters)
 {
-    uint16_t idx, ir_idx;
     uint8_t adc_chan;
     uint32_t adc_val;
-    sensor_t light_sen_data;
-    sensor_t light_sen_count;
+    uint16_t idx, ir_idx;
+    uint8_t over_threshold_cnt;
 
     while(1) {
         xSemaphoreTake(dma_done_sem, portMAX_DELAY);
+        sensor_ir_is_sampling = false;
+        sensor_ir_is_processing = true;
 
-        memset(&light_sen_data, 0, sizeof(light_sen_data));
-        memset(&light_sen_count, 0, sizeof(light_sen_count));
         ir_idx = 0;
-
-        for (idx = 0; idx < ADC_MAX_BUFFER_SIZE; idx++) {
-            adc_chan = adc_raw_data[idx] >> 21;
-            adc_val = (((adc_raw_data[idx] & 0xffff) >> 2) * 2000)  / 16384;
+        for (idx = 0; idx < SENSOR_IR_RAW_SIZE; idx++) {
+            adc_chan = sensor_ir_raw[idx] >> 21;
+            adc_val = (((sensor_ir_raw[idx] & 0xffff) >> 2) * 2000)  / 16384;
 
             if (adc_chan == ADC_CHANNEL0) {
                 ir_sen_data[ir_idx++] = adc_val;
-            } else if (adc_chan == ADC_CHANNEL8) {
-                light_sen_data.right += adc_val;
-                light_sen_count.right++;
-            }  else if (adc_chan == ADC_CHANNEL9) {
-                light_sen_data.left += adc_val;
-                light_sen_count.left++;
             }
         }
 
-        fft(ir_sen_data, ir_sen_fdata, ADC_CHANNEL_BUFFER_SIZE);
-        light_sen_data.right = light_sen_data.right / light_sen_count.right;
-        light_sen_data.left = light_sen_data.left / light_sen_count.left;
+        fft(ir_sen_data, ir_sen_fdata, ir_idx);
 
         /* Sampling frequency: 125000/3 = 41667
-         * Max sample : 128
-         * Bin 30: 9765 Hz
-         * Bin 31: 10091 Hz
-         * Bin 32: 10416 Hz
-         * Bin 33: 10742 Hz
-         */
-        memcpy(ir_sen_fdata_prev_mag, ir_sen_fdata_mag, sizeof(ir_sen_fdata_mag));
+        * Max sample : 128
+        * Bin 30: 9765 Hz
+        * Bin 31: 10091 Hz
+        * Bin 32: 10416 Hz
+        * Bin 33: 10742 Hz
+        */
 
         ir_sen_fdata_mag[0] = (int)round(sqrt(crealf(ir_sen_fdata[30]) * crealf(ir_sen_fdata[30]) + cimagf(ir_sen_fdata[30]) * cimagf(ir_sen_fdata[30])));
         ir_sen_fdata_mag[1] = (int)round(sqrt(crealf(ir_sen_fdata[31]) * crealf(ir_sen_fdata[31]) + cimagf(ir_sen_fdata[31]) * cimagf(ir_sen_fdata[31])));
         ir_sen_fdata_mag[2] = (int)round(sqrt(crealf(ir_sen_fdata[32]) * crealf(ir_sen_fdata[32]) + cimagf(ir_sen_fdata[32]) * cimagf(ir_sen_fdata[32])));
         ir_sen_fdata_mag[3] = (int)round(sqrt(crealf(ir_sen_fdata[33]) * crealf(ir_sen_fdata[33]) + cimagf(ir_sen_fdata[33]) * cimagf(ir_sen_fdata[33])));
+
+        over_threshold_cnt = 0;
+
         for (idx = 0; idx < 4; idx++) {
-            if (abs(ir_sen_fdata_mag[idx] - ir_sen_fdata_prev_mag[idx]) >= 300) {
-                xSemaphoreGive(robot_detect_sem);
-                // printf("max_ir_10khz_data %u\r\n", abs(ir_sen_fdata_mag[idx] - ir_sen_fdata_prev_mag[idx]));
-                break;
+            if ((ir_sen_fdata_mag[idx] - ir_sen_fdata_prev_mag[idx]) >= SENSOR_IR_DETECT_THRESHOLD) {
+                over_threshold_cnt++;
             }
         }
 
-        xQueueSend(sensor_queue_hdl, &light_sen_data, 0);
-        dma_reload(dma_sensor, (uint32_t)DMA_ADDR_ADC_RDR, (uint32_t)adc_raw_data, sizeof(adc_raw_data));
-        device_control(dma_sensor, DEVICE_CTRL_DMA_CHANNEL_START, NULL);
+        if (over_threshold_cnt >= 1) {
+            sensor_ir_is_detect = true;
+        } else {
+            sensor_ir_is_detect = false;
+        }
+
+        sensor_ir_is_processing = false;
     }
 }
 
 void sensor_init(void)
 {
-    adc_channel_t posChList[] = { ADC_CHANNEL0, ADC_CHANNEL8, ADC_CHANNEL9 };
-    adc_channel_t negChList[] = { ADC_CHANNEL_GND, ADC_CHANNEL_GND, ADC_CHANNEL_GND };
-    adc_channel_cfg_t adc_channel_cfg;
-
-    dma_done_sem = xSemaphoreCreateBinary();
-    robot_detect_sem = xSemaphoreCreateBinary();
-    sensor_queue_hdl = xQueueCreateStatic(1, sizeof(sensor_t), sensor_queue, &sensor_st_queue);
-
-    adc_channel_cfg.pos_channel = posChList;
-    adc_channel_cfg.neg_channel = negChList;
-    adc_channel_cfg.num = ADC_CHANNEL;
-
     adc_register(ADC0_INDEX, "adc");
 
     adc_sensor = device_find("adc");
-
-    if (adc_sensor) {
-        device_open(adc_sensor, DEVICE_OFLAG_DMA_RX);
-        if (device_control(adc_sensor, DEVICE_CTRL_ADC_CHANNEL_CONFIG, &adc_channel_cfg) == ERROR) {
-            MSG("ADC channel config error , Please check the channel corresponding to IO is initial success by board system or Channel is invaild \r\n");
-            while (1)
-                ;
-        }
-    }
+    device_open(adc_sensor, DEVICE_OFLAG_STREAM_RX);
 
     dma_register(DMA0_CH1_INDEX, "adc_dma");
     dma_sensor = device_find("adc_dma");
+
+    dma_done_sem = xSemaphoreCreateBinary();
 
     if (dma_sensor) {
         DMA_DEV(dma_sensor)->direction = DMA_PERIPH_TO_MEMORY;
@@ -169,25 +146,122 @@ void sensor_init(void)
         device_open(dma_sensor, 0);
     }
 
-    device_set_callback(dma_sensor, dma_sensor_transfer_done);
-    dma_reload(dma_sensor, (uint32_t)DMA_ADDR_ADC_RDR, (uint32_t)adc_raw_data, sizeof(adc_raw_data));
-    device_control(dma_sensor, DEVICE_CTRL_DMA_CHANNEL_START, NULL);
-    adc_channel_start(adc_sensor);
+    device_control(dma_sensor, DEVICE_CTRL_SET_INT, NULL);
+    device_set_callback(dma_sensor, sensor_ir_dma_done);
 
-    xTaskCreateStatic(sensor_task, (char *)"sensor", sizeof(sensor_stack) / 4, NULL, configMAX_PRIORITIES - 4, sensor_stack, &sensor_task_handle);
+    xTaskCreateStatic(sensor_ir_processing_task, (char *)"sensor", sizeof(sensor_stack) / 4, NULL, configMAX_PRIORITIES - 4, sensor_stack, &sensor_task_handle);
 }
 
-int sensor_is_ready(void)
+void sensor_light_read(sensor_light_t *sen_val, uint32_t sample_num)
 {
-    return (uxQueueMessagesWaiting(sensor_queue_hdl) > 0);
+    adc_channel_val_t adc_val[SENSOR_LIGHT_CHAN_NUM];
+    adc_channel_t posChList[] = { ADC_CHANNEL8, ADC_CHANNEL9 };
+    adc_channel_t negChList[] = { ADC_CHANNEL_GND, ADC_CHANNEL_GND };
+    adc_channel_cfg_t adc_channel_cfg;
+    uint32_t left_val = 0;
+    uint32_t left_sample_num = 0;
+    uint32_t right_val = 0;
+    uint32_t right_sample_num = 0;
+    int idx;
+
+    while (sensor_ir_is_sampling) {
+        vTaskDelay(pdMS_TO_TICKS(1));
+    }
+
+    adc_channel_stop(adc_sensor);
+    device_close(adc_sensor);
+
+    device_open(adc_sensor, DEVICE_OFLAG_STREAM_RX);
+
+    ADC_DEV(adc_sensor)->continuous_conv_mode = false;
+
+    adc_channel_cfg.pos_channel = posChList;
+    adc_channel_cfg.neg_channel = negChList;
+    adc_channel_cfg.num = SENSOR_LIGHT_CHAN_NUM;
+
+    if (device_control(adc_sensor, DEVICE_CTRL_ADC_CHANNEL_CONFIG, &adc_channel_cfg) == ERROR) {
+        return;
+    }
+
+    while (sample_num--) {
+        adc_channel_start(adc_sensor);
+        device_read(adc_sensor, 0, (void *)adc_val, SENSOR_LIGHT_CHAN_NUM);
+        for (idx = 0; idx < SENSOR_LIGHT_CHAN_NUM; idx++) {
+            if (adc_val[idx].posChan == ADC_CHANNEL9) {
+                left_val += (uint32_t)(adc_val[idx].volt * 1000);
+                left_sample_num++;
+            } else if (adc_val[idx].posChan == ADC_CHANNEL8) {
+                right_val += (uint32_t)(adc_val[idx].volt * 1000);
+                right_sample_num++;
+            }
+        }
+    }
+
+    if (left_sample_num) sen_val->left = left_val / left_sample_num;
+    else sen_val->left = 0;
+    
+    if (right_sample_num) sen_val->right = right_val / right_sample_num;
+    else sen_val->right = 0;
 }
 
-void sensor_read_data(sensor_t *sen_data)
+void sensor_ir_start_measure(void)
 {
-    xQueueReceive(sensor_queue_hdl, sen_data, 0);
+    adc_channel_t posChList[] = { ADC_CHANNEL0 };
+    adc_channel_t negChList[] = { ADC_CHANNEL_GND };
+    adc_channel_cfg_t adc_channel_cfg;
+
+    if ((!sensor_ir_is_sampling) && (!sensor_ir_is_processing)) {
+        xSemaphoreTake(dma_done_sem, 0);
+
+        adc_channel_stop(adc_sensor);
+        device_close(adc_sensor);
+
+        device_open(adc_sensor, DEVICE_OFLAG_DMA_RX);
+
+        ADC_DEV(adc_sensor)->continuous_conv_mode = true;
+
+        adc_channel_cfg.pos_channel = posChList;
+        adc_channel_cfg.neg_channel = negChList;
+        adc_channel_cfg.num = SENSOR_IR_CHAN_NUM;
+
+        if (device_control(adc_sensor, DEVICE_CTRL_ADC_CHANNEL_CONFIG, &adc_channel_cfg) == ERROR) {
+            return;
+        }
+
+        dma_reload(dma_sensor, (uint32_t)DMA_ADDR_ADC_RDR, (uint32_t)sensor_ir_raw, sizeof(sensor_ir_raw));
+        device_control(dma_sensor, DEVICE_CTRL_DMA_CHANNEL_START, NULL);
+        adc_channel_start(adc_sensor);
+
+        sensor_ir_is_sampling = true;
+    }
 }
 
-int sensor_is_robot_detection(void)
+bool sensor_ir_is_robot_detect(void)
 {
-    return (xSemaphoreTake(robot_detect_sem, 0) == pdTRUE);
+    return sensor_ir_is_detect;
+}
+
+int sensor_ir_store_calib(void)
+{
+    int idx;
+    int is_calib_valid = 1;
+
+    for (idx = 0; idx < 4; idx++) {
+        if (ir_sen_fdata_mag[idx] > 200) {
+            is_calib_valid = 0;
+            break;
+        }
+    }
+
+    if (is_calib_valid) {
+        sensor_ir_is_detect = false;
+        memcpy((void*)ir_sen_fdata_prev_mag, (void*)ir_sen_fdata_mag, sizeof(ir_sen_fdata_mag));
+    }
+
+    return is_calib_valid;
+}
+
+bool sensor_ir_is_measuring(void)
+{
+    return ((sensor_ir_is_sampling) || (sensor_ir_is_processing));
 }

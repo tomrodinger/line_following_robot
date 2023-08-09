@@ -1,0 +1,64 @@
+{
+  "product": {
+    "model": "R1",
+    "picture": "Robot_R1_picture.jpg",
+    "firmwares": [
+      {
+        "version": "0.2.5",
+        "compatibility": 0,
+        "date": "July 23, 2023",
+        "description": "Robot can follow line and detect each other, there is still some bugs.",
+        "url": "20230723/line_robot_draft_detection_bl702.bin",
+        "sha256": "04af406222f32f04f0a24e06f5521581e01a5b9325a02b9137901fbb142e8d79"
+      },
+      {
+        "version": "0.2.5",
+        "compatibility": 0,
+        "date": "July 23, 2023",
+        "description": "Robot can follow line, playing audio and detect each other",
+        "url": "20230723/line_robot_bl702_draft_detection_audio.bin",
+        "sha256": "271421f0b551bb7f69a4a0ed797ee88bca113697a8c1b9906beb3955f083cd93"
+      },
+      {
+        "version": "0.2.6",
+        "compatibility": 0,
+        "date": "Aug 06, 2023",
+        "description": "Robot can follow line, playing audio and detect each other. PWM frequency is 20khz, duty cycle is 50%",
+        "url": "20230806/line_robot_bl702_freq_20_duty_cycle_50.bin",
+        "sha256": "45a5a6163fa2780b217ae4dbf8d5b6e63445e48361880d171294f52c9d9ed98d"
+      },
+      {
+        "version": "0.2.6",
+        "compatibility": 0,
+        "date": "Aug 06, 2023",
+        "description": "Robot can follow line, playing audio and detect each other. PWM frequency is 20khz, duty cycle is 25%",
+        "url": "20230806/line_robot_bl702_freq_20_duty_cycle_25.bin.bin",
+        "sha256": "6a66a27c85564faa07655a39223b1800d22fe1a00fcf610ac8239bfe15cef848"
+      },
+      {
+        "version": "0.2.6",
+        "compatibility": 0,
+        "date": "Aug 06, 2023",
+        "description": "Robot can follow line, playing audio and detect each other. PWM frequency is 40khz, duty cycle is 50%",
+        "url": "20230806/line_robot_bl702_freq_40_duty_50.bin",
+        "sha256": "79f5f0a41699cad4a83d4149a4e41ea5d271292c206a886648dbf2ffe5cd5067"
+      },
+      {
+        "version": "0.2.6",
+        "compatibility": 0,
+        "date": "Aug 06, 2023",
+        "description": "Robot can follow line, playing audio and detect each other. PWM frequency is 40khz, duty cycle is 25%",
+        "url": "20230806/line_robot_bl702_freq_40_duty_25.bin",
+        "sha256": "df6870ff4ae7707e470a9c3d8e2b7d3a39e60c13cecd0b44275ffa9ae46e434e"
+      },
+      {
+        "version": "0.2.6",
+        "compatibility": 0,
+        "date": "Aug 06, 2023",
+        "description": "Robot can follow line, playing audio and detect each other. PWM frequency is 40khz, duty cycle is 100%",
+        "url": "20230806/line_robot_bl702_freq_40_duty_100.bin",
+        "sha256": "a83e2148041184fc30e5f8549b96d41c56bfc3845103edc2db33fa8ebfa02d28"
+      }
+    ]
+  }
+}
