@@ -10,6 +10,9 @@
 
 #define TURN_THRESHOLD          -20
 #define CALIBRATION_SAMPLES     5
+#define CALIBRATION_LEFT_TIMEOUT        80
+#define CALIBRATION_RIGHT_TIMEOUT       180
+#define CALIBRATION_CENTER_TIMEOUT      100
 
 #define LED_R_0  GPIO_PIN_22
 #define LED_R_1  GPIO_PIN_0
@@ -28,6 +31,8 @@ float setpoint = 0;
 // Control loop gains
 float kp = 0.1, ki = 0.0001, kd = 0.005;
 uint32_t prev_calib_time;
+
+#define MOTOR_DIV   1
 
 void robot_init(void)
 {
@@ -63,7 +68,8 @@ void robot_run(void)
     int32_t left_diff, right_diff;
     int left_speed, right_speed, loop, detect_cnt;
     bool is_robot_detect = false;
-    int max_speed = 100;
+    int calib_timeout = CALIBRATION_LEFT_TIMEOUT;
+    int max_speed = 100 / MOTOR_DIV;
 
     if ((bflb_platform_get_time_ms() - prev_calib_time) >= 5000) {
         if (prev_diff_speed <= 40) {
@@ -74,6 +80,7 @@ void robot_run(void)
 
     if (!is_calib) {
         motor_run(STOP, 0);
+        vTaskDelay(pdMS_TO_TICKS(100));
 
         do {
             sensor_ir_start_measure();
@@ -82,38 +89,59 @@ void robot_run(void)
             }
         } while (!sensor_ir_store_calib());
         
-        motor_run(CIRCLE_LEFT, 45);
+        calib_timeout = CALIBRATION_LEFT_TIMEOUT;
+        motor_run(CIRCLE_LEFT, 45 / MOTOR_DIV);
         while(1) {
             sensor_light_read(&sen_light_val, CALIBRATION_SAMPLES);
             if ((sen_light_val.left > sen_light_val.right) &&
                     ((sen_light_val.left - sen_light_val.right) >= 100)) {
                 break;
             }
+
+            calib_timeout--;
+            if (calib_timeout == 0) {
+                break;
+            }
+
             vTaskDelay(pdMS_TO_TICKS(1));
         }
         sen_light_calib_val.left = sen_light_val.left;
 
-        motor_run(CIRCLE_RIGHT, 45);
+        calib_timeout = CALIBRATION_RIGHT_TIMEOUT;
+        motor_run(CIRCLE_RIGHT, 45 / MOTOR_DIV);
         while(1) {
             sensor_light_read(&sen_light_val, CALIBRATION_SAMPLES);
             if ((sen_light_val.right > sen_light_val.left) &&
                     ((sen_light_val.right - sen_light_val.left) >= 100)) {
                 break;
             }
+
+            calib_timeout--;
+            if (calib_timeout == 0) {
+                break;
+            }
+
             vTaskDelay(pdMS_TO_TICKS(1));
         }
         sen_light_calib_val.right = sen_light_val.right;
 
-        motor_run(CIRCLE_LEFT, 45);
+        calib_timeout = CALIBRATION_CENTER_TIMEOUT;
+        motor_run(CIRCLE_LEFT, 45 / MOTOR_DIV);
         while(1) {
             sensor_light_read(&sen_light_val, CALIBRATION_SAMPLES);
             if (abs(sen_light_val.left - sen_light_val.right) <= 20) {
                 break;
             }
+
+            calib_timeout--;
+            if (calib_timeout == 0) {
+                break;
+            }
+
             vTaskDelay(pdMS_TO_TICKS(1));
         }
         motor_run(STOP, 0);
-        vTaskDelay(pdMS_TO_TICKS(50));
+        vTaskDelay(pdMS_TO_TICKS(100));
 
         is_calib = true;
     }
@@ -161,15 +189,15 @@ void robot_run(void)
     prev_diff_speed = abs(left_speed - right_speed);
 
     if ((bflb_platform_get_time_ms() - prev_calib_time) < 500) {
-        max_speed = 40;
+        max_speed = 40 / MOTOR_DIV;
     }
 
     if ((bflb_platform_get_time_ms() - prev_calib_time) >= 4500) {
-        max_speed = 60;
+        max_speed = 60 / MOTOR_DIV;
     }
 
     if (prev_diff_speed >= 20) {
-        max_speed = 70;
+        max_speed = 70 / MOTOR_DIV;
     }
 
     left_speed = (left_speed * max_speed) / 100;
@@ -199,6 +227,12 @@ void robot_run(void)
 
         detect_cnt = 0;
 
+        if (sensor_ir_is_measuring()) {
+            while (sensor_ir_is_measuring()) {
+                vTaskDelay(pdMS_TO_TICKS(1));
+            }
+        }
+
         do {
             detect_cnt++;
             sensor_ir_start_measure();
@@ -206,20 +240,23 @@ void robot_run(void)
                 vTaskDelay(pdMS_TO_TICKS(1));
             }
 
-            if (detect_cnt >= 5) {
+            if (detect_cnt >= 3) {
                 break;
             }
         } while (sensor_ir_is_robot_detect());
 
-        if (detect_cnt >= 5) {
-            motor_run(BACKWARD, 80);
+        if (detect_cnt >= 3) {
+            vTaskDelay(pdMS_TO_TICKS(2000));
+            motor_run(BACKWARD, 80 / MOTOR_DIV);
             vTaskDelay(pdMS_TO_TICKS(200));
             motor_run(STOP, 0);
             vTaskDelay(pdMS_TO_TICKS(100));
 
             is_calib = false;
             
-            motor_run(CIRCLE_LEFT, 35);
+            motor_run(CIRCLE_LEFT, 80 / MOTOR_DIV);
+            vTaskDelay(pdMS_TO_TICKS(100));
+            motor_run(CIRCLE_LEFT, 40 / MOTOR_DIV);
             vTaskDelay(pdMS_TO_TICKS(200));
 
             while (1) {
@@ -227,12 +264,19 @@ void robot_run(void)
 
                 if ((sen_light_val.left < sen_light_val.right) &&
                         ((sen_light_val.right - sen_light_val.left) >= 150)) {
+                    motor_run(CIRCLE_LEFT, 80 / MOTOR_DIV);
+                    vTaskDelay(pdMS_TO_TICKS(50));
+                    break;
+                }
+
+                if ((sen_light_val.right < sen_light_val.left) &&
+                        ((sen_light_val.left - sen_light_val.right) >= 150)) {
+                    motor_run(CIRCLE_RIGHT, 80 / MOTOR_DIV);
+                    vTaskDelay(pdMS_TO_TICKS(50));
                     break;
                 }
             }
 
-            motor_run(CIRCLE_LEFT, 80);
-            vTaskDelay(pdMS_TO_TICKS(50));
             motor_run(STOP, 0);
             vTaskDelay(pdMS_TO_TICKS(100));
 

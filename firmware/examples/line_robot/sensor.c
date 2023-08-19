@@ -12,7 +12,7 @@
 #define SENSOR_IR_CHAN_NUM      1
 
 #define SENSOR_IR_RAW_SIZE      128
-#define SENSOR_IR_DETECT_THRESHOLD  70
+#define SENSOR_IR_DETECT_THRESHOLD  175
 
 static struct device *adc_sensor;
 static struct device *dma_sensor;
@@ -80,7 +80,7 @@ static void sensor_ir_processing_task(void *pvParameters)
         ir_idx = 0;
         for (idx = 0; idx < SENSOR_IR_RAW_SIZE; idx++) {
             adc_chan = sensor_ir_raw[idx] >> 21;
-            adc_val = (((sensor_ir_raw[idx] & 0xffff) >> 2) * 2000)  / 16384;
+            adc_val = (((sensor_ir_raw[idx] & 0xffff)) * 2000)  / 65536;
 
             if (adc_chan == ADC_CHANNEL0) {
                 ir_sen_data[ir_idx++] = adc_val;
@@ -89,18 +89,18 @@ static void sensor_ir_processing_task(void *pvParameters)
 
         fft(ir_sen_data, ir_sen_fdata, ir_idx);
 
-        /* Sampling frequency: 125000/3 = 41667
+        /* Sampling frequency: 15.625 khz , ir frequency 5khz
         * Max sample : 128
-        * Bin 30: 9765 Hz
-        * Bin 31: 10091 Hz
-        * Bin 32: 10416 Hz
-        * Bin 33: 10742 Hz
+        * Bin 40: 4882 Hz
+        * Bin 41: 5004 Hz
+        * Bin 42: 5126 Hz
+        * Bin 43: 5249 Hz
         */
 
-        ir_sen_fdata_mag[0] = (int)round(sqrt(crealf(ir_sen_fdata[30]) * crealf(ir_sen_fdata[30]) + cimagf(ir_sen_fdata[30]) * cimagf(ir_sen_fdata[30])));
-        ir_sen_fdata_mag[1] = (int)round(sqrt(crealf(ir_sen_fdata[31]) * crealf(ir_sen_fdata[31]) + cimagf(ir_sen_fdata[31]) * cimagf(ir_sen_fdata[31])));
-        ir_sen_fdata_mag[2] = (int)round(sqrt(crealf(ir_sen_fdata[32]) * crealf(ir_sen_fdata[32]) + cimagf(ir_sen_fdata[32]) * cimagf(ir_sen_fdata[32])));
-        ir_sen_fdata_mag[3] = (int)round(sqrt(crealf(ir_sen_fdata[33]) * crealf(ir_sen_fdata[33]) + cimagf(ir_sen_fdata[33]) * cimagf(ir_sen_fdata[33])));
+        ir_sen_fdata_mag[0] = (int)round(sqrt(crealf(ir_sen_fdata[40]) * crealf(ir_sen_fdata[40]) + cimagf(ir_sen_fdata[40]) * cimagf(ir_sen_fdata[40])));
+        ir_sen_fdata_mag[1] = (int)round(sqrt(crealf(ir_sen_fdata[41]) * crealf(ir_sen_fdata[41]) + cimagf(ir_sen_fdata[41]) * cimagf(ir_sen_fdata[41])));
+        ir_sen_fdata_mag[2] = (int)round(sqrt(crealf(ir_sen_fdata[42]) * crealf(ir_sen_fdata[42]) + cimagf(ir_sen_fdata[42]) * cimagf(ir_sen_fdata[42])));
+        ir_sen_fdata_mag[3] = (int)round(sqrt(crealf(ir_sen_fdata[43]) * crealf(ir_sen_fdata[43]) + cimagf(ir_sen_fdata[43]) * cimagf(ir_sen_fdata[43])));
 
         over_threshold_cnt = 0;
 
@@ -171,9 +171,10 @@ void sensor_light_read(sensor_light_t *sen_val, uint32_t sample_num)
     adc_channel_stop(adc_sensor);
     device_close(adc_sensor);
 
-    device_open(adc_sensor, DEVICE_OFLAG_STREAM_RX);
-
     ADC_DEV(adc_sensor)->continuous_conv_mode = false;
+    ADC_DEV(adc_sensor)->data_width = ADC_DATA_WIDTH_16B_WITH_256_AVERAGE;
+
+    device_open(adc_sensor, DEVICE_OFLAG_STREAM_RX);
 
     adc_channel_cfg.pos_channel = posChList;
     adc_channel_cfg.neg_channel = negChList;
@@ -216,9 +217,10 @@ void sensor_ir_start_measure(void)
         adc_channel_stop(adc_sensor);
         device_close(adc_sensor);
 
-        device_open(adc_sensor, DEVICE_OFLAG_DMA_RX);
-
         ADC_DEV(adc_sensor)->continuous_conv_mode = true;
+        ADC_DEV(adc_sensor)->data_width = ADC_DATA_WIDTH_16B_WITH_128_AVERAGE;
+
+        device_open(adc_sensor, DEVICE_OFLAG_DMA_RX);
 
         adc_channel_cfg.pos_channel = posChList;
         adc_channel_cfg.neg_channel = negChList;
@@ -246,12 +248,12 @@ int sensor_ir_store_calib(void)
     int idx;
     int is_calib_valid = 1;
 
-    for (idx = 0; idx < 4; idx++) {
-        if (ir_sen_fdata_mag[idx] > 200) {
-            is_calib_valid = 0;
-            break;
-        }
-    }
+    // for (idx = 0; idx < 4; idx++) {
+    //     if (ir_sen_fdata_mag[idx] > 200) {
+    //         is_calib_valid = 0;
+    //         break;
+    //     }
+    // }
 
     if (is_calib_valid) {
         sensor_ir_is_detect = false;
