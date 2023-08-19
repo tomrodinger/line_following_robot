@@ -60,12 +60,12 @@
         "sha256": "2fe97ae3a7252c9359d0b77f42964411ff4a6e92f9ca1cc0b25c449dbea309b0"
       },
       {
-        "version": "0.2.8",
+        "version": "0.2.9",
         "compatibility": 0,
         "date": "Aug 19, 2023",
-        "description": "Robot can follow line, playing audio and detect each other. Following line calibration is corrected. Duty cycle is 25%",
-        "url": "20230819/line_robot_bl702_pwm_20_duty_25.bin",
-        "sha256": "2afe9ea77a5f924f3f633d2dc39f3280fa57d0a49d8d9f780802a734b33ff8d3"
+        "description": "Improved detection distance. Duty cycle is 50%",
+        "url": "20230819/line_robot_bl702_pwm_20_duty_50_improved_detect.bin",
+        "sha256": "81c6bde28a949a3f48fa3eb304a6d65d0d73925897bbfe57de4e34966d16c629"
       }
     ]
   }
