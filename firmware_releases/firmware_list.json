@@ -66,6 +66,22 @@
         "description": "Robot can follow line, playing audio and detect each other. Following line calibration is corrected",
         "url": "20230818/line_robot_bl702.bin",
         "sha256": "b1092d94e618041db97ab93e877a81398d234ab3223355cff35f3def2f19a35d"
+      },
+      {
+        "version": "0.2.8",
+        "compatibility": 0,
+        "date": "Aug 19, 2023",
+        "description": "Robot can follow line, playing audio and detect each other. Following line calibration is corrected. Duty cycle is 50%",
+        "url": "20230819/line_robot_bl702_pwm_20_duty_50.bin",
+        "sha256": "2fe97ae3a7252c9359d0b77f42964411ff4a6e92f9ca1cc0b25c449dbea309b0"
+      },
+      {
+        "version": "0.2.8",
+        "compatibility": 0,
+        "date": "Aug 19, 2023",
+        "description": "Robot can follow line, playing audio and detect each other. Following line calibration is corrected. Duty cycle is 25%",
+        "url": "20230819/line_robot_bl702_pwm_20_duty_25.bin",
+        "sha256": "2afe9ea77a5f924f3f633d2dc39f3280fa57d0a49d8d9f780802a734b33ff8d3"
       }
     ]
   }
