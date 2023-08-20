@@ -75,7 +75,6 @@ static void sensor_ir_processing_task(void *pvParameters)
     while(1) {
         xSemaphoreTake(dma_done_sem, portMAX_DELAY);
         sensor_ir_is_sampling = false;
-        sensor_ir_is_processing = true;
 
         ir_idx = 0;
         for (idx = 0; idx < SENSOR_IR_RAW_SIZE; idx++) {
@@ -235,6 +234,7 @@ void sensor_ir_start_measure(void)
         adc_channel_start(adc_sensor);
 
         sensor_ir_is_sampling = true;
+        sensor_ir_is_processing = true;
     }
 }
 
@@ -263,7 +263,7 @@ int sensor_ir_store_calib(void)
     return is_calib_valid;
 }
 
-bool sensor_ir_is_measuring(void)
+bool sensor_ir_is_result_ready(void)
 {
-    return ((sensor_ir_is_sampling) || (sensor_ir_is_processing));
+    return (sensor_ir_is_processing == false);
 }

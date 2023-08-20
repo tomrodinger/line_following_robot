@@ -32,7 +32,7 @@ float setpoint = 0;
 float kp = 0.1, ki = 0.0001, kd = 0.005;
 uint32_t prev_calib_time;
 
-#define MOTOR_DIV   1
+#define MOTOR_DIV   2
 
 void robot_init(void)
 {
@@ -66,7 +66,8 @@ void robot_run(void)
     static bool is_calib = false;
     sensor_light_t sen_light_val;
     int32_t left_diff, right_diff;
-    int left_speed, right_speed, loop, detect_cnt;
+    int left_speed, right_speed;
+    static uint8_t robot_detect_cnt = 0;
     bool is_robot_detect = false;
     int calib_timeout = CALIBRATION_LEFT_TIMEOUT;
     int max_speed = 100 / MOTOR_DIV;
@@ -84,7 +85,7 @@ void robot_run(void)
 
         do {
             sensor_ir_start_measure();
-            while (sensor_ir_is_measuring()) {
+            while (!sensor_ir_is_result_ready()) {
                 vTaskDelay(pdMS_TO_TICKS(1));
             }
         } while (!sensor_ir_store_calib());
@@ -147,8 +148,14 @@ void robot_run(void)
     }
 
     sensor_light_read(&sen_light_val, CALIBRATION_SAMPLES);
-    if (!sensor_ir_is_measuring()) {
+    if (sensor_ir_is_result_ready()) {
         is_robot_detect = sensor_ir_is_robot_detect();
+        if (is_robot_detect) {
+            robot_detect_cnt++;
+        } else {
+            robot_detect_cnt = 0;
+        }
+
         sensor_ir_start_measure();
     }
 
@@ -203,85 +210,72 @@ void robot_run(void)
     left_speed = (left_speed * max_speed) / 100;
     right_speed = (right_speed * max_speed) / 100;
 
-    if (!is_robot_detect) {
+    if (robot_detect_cnt) {
+        gpio_write(LED_R_0, 0);
+        gpio_write(LED_R_1, 0);
+        motor_run(STOP, 0);
+        vTaskDelay(pdMS_TO_TICKS(10));
+    } else {
+        gpio_write(LED_R_0, 1);
+        gpio_write(LED_R_1, 1);
         motor_run_manual(right_speed, left_speed);
-
-        loop = 5;
-
-        while (loop--) {
-            if (!sensor_ir_is_measuring()) {
-                if (sensor_ir_is_robot_detect()) {
-                    break;
-                }
-            }
-            vTaskDelay(pdMS_TO_TICKS(1));
-        }
+        vTaskDelay(pdMS_TO_TICKS(5));
     }
 
-    if ((is_robot_detect) || (sensor_ir_is_robot_detect())) {
+    if (sensor_ir_is_result_ready()) {
+        is_robot_detect = sensor_ir_is_robot_detect();
+        if (is_robot_detect) {
+            robot_detect_cnt++;
+        } else {
+            robot_detect_cnt = 0;
+        }
+
+        sensor_ir_start_measure();
+    }
+
+    if (robot_detect_cnt >= 3) {
         gpio_write(LED_G_0, 1);
         gpio_write(LED_G_1, 1);
         gpio_write(LED_R_0, 0);
         gpio_write(LED_R_1, 0);
         motor_run(STOP, 0);
 
-        detect_cnt = 0;
+        robot_detect_cnt = 0;
+        vTaskDelay(pdMS_TO_TICKS(2000));
+        motor_run(BACKWARD, 80 / MOTOR_DIV);
+        vTaskDelay(pdMS_TO_TICKS(200));
+        motor_run(STOP, 0);
+        vTaskDelay(pdMS_TO_TICKS(100));
 
-        if (sensor_ir_is_measuring()) {
-            while (sensor_ir_is_measuring()) {
-                vTaskDelay(pdMS_TO_TICKS(1));
-            }
-        }
+        is_calib = false;
+        
+        motor_run(CIRCLE_LEFT, 80 / MOTOR_DIV);
+        vTaskDelay(pdMS_TO_TICKS(100));
+        motor_run(CIRCLE_LEFT, 40 / MOTOR_DIV);
+        vTaskDelay(pdMS_TO_TICKS(200));
 
-        do {
-            detect_cnt++;
-            sensor_ir_start_measure();
-            while (sensor_ir_is_measuring()) {
-                vTaskDelay(pdMS_TO_TICKS(1));
-            }
+        while (1) {
+            sensor_light_read(&sen_light_val, CALIBRATION_SAMPLES);
 
-            if (detect_cnt >= 3) {
+            if ((sen_light_val.left < sen_light_val.right) &&
+                    ((sen_light_val.right - sen_light_val.left) >= 150)) {
+                motor_run(CIRCLE_LEFT, 80 / MOTOR_DIV);
+                vTaskDelay(pdMS_TO_TICKS(50));
                 break;
             }
-        } while (sensor_ir_is_robot_detect());
 
-        if (detect_cnt >= 3) {
-            vTaskDelay(pdMS_TO_TICKS(2000));
-            motor_run(BACKWARD, 80 / MOTOR_DIV);
-            vTaskDelay(pdMS_TO_TICKS(200));
-            motor_run(STOP, 0);
-            vTaskDelay(pdMS_TO_TICKS(100));
-
-            is_calib = false;
-            
-            motor_run(CIRCLE_LEFT, 80 / MOTOR_DIV);
-            vTaskDelay(pdMS_TO_TICKS(100));
-            motor_run(CIRCLE_LEFT, 40 / MOTOR_DIV);
-            vTaskDelay(pdMS_TO_TICKS(200));
-
-            while (1) {
-                sensor_light_read(&sen_light_val, CALIBRATION_SAMPLES);
-
-                if ((sen_light_val.left < sen_light_val.right) &&
-                        ((sen_light_val.right - sen_light_val.left) >= 150)) {
-                    motor_run(CIRCLE_LEFT, 80 / MOTOR_DIV);
-                    vTaskDelay(pdMS_TO_TICKS(50));
-                    break;
-                }
-
-                if ((sen_light_val.right < sen_light_val.left) &&
-                        ((sen_light_val.left - sen_light_val.right) >= 150)) {
-                    motor_run(CIRCLE_RIGHT, 80 / MOTOR_DIV);
-                    vTaskDelay(pdMS_TO_TICKS(50));
-                    break;
-                }
+            if ((sen_light_val.right < sen_light_val.left) &&
+                    ((sen_light_val.left - sen_light_val.right) >= 150)) {
+                motor_run(CIRCLE_RIGHT, 80 / MOTOR_DIV);
+                vTaskDelay(pdMS_TO_TICKS(50));
+                break;
             }
-
-            motor_run(STOP, 0);
-            vTaskDelay(pdMS_TO_TICKS(100));
-
-            prev_calib_time = bflb_platform_get_time_ms();
         }
+
+        motor_run(STOP, 0);
+        vTaskDelay(pdMS_TO_TICKS(100));
+
+        prev_calib_time = bflb_platform_get_time_ms();
     } else {
         gpio_write(LED_G_0, 0);
         gpio_write(LED_G_1, 0);

@@ -10,7 +10,7 @@ void sensor_init(void);
 void sensor_light_read(sensor_light_t *sen_val, uint32_t sample_num);
 void sensor_ir_start_measure(void);
 bool sensor_ir_is_robot_detect(void);
-bool sensor_ir_is_measuring(void);
+bool sensor_ir_is_result_ready(void);
 int sensor_ir_store_calib(void);
 
 #endif
