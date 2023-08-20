@@ -20,30 +20,6 @@
         "sha256": "6a66a27c85564faa07655a39223b1800d22fe1a00fcf610ac8239bfe15cef848"
       },
       {
-        "version": "0.2.6",
-        "compatibility": 0,
-        "date": "Aug 06, 2023",
-        "description": "Robot can follow line, playing audio and detect each other. PWM frequency is 40khz, duty cycle is 50%",
-        "url": "20230806/line_robot_bl702_freq_40_duty_50.bin",
-        "sha256": "79f5f0a41699cad4a83d4149a4e41ea5d271292c206a886648dbf2ffe5cd5067"
-      },
-      {
-        "version": "0.2.6",
-        "compatibility": 0,
-        "date": "Aug 06, 2023",
-        "description": "Robot can follow line, playing audio and detect each other. PWM frequency is 40khz, duty cycle is 25%",
-        "url": "20230806/line_robot_bl702_freq_40_duty_25.bin",
-        "sha256": "df6870ff4ae7707e470a9c3d8e2b7d3a39e60c13cecd0b44275ffa9ae46e434e"
-      },
-      {
-        "version": "0.2.6",
-        "compatibility": 0,
-        "date": "Aug 06, 2023",
-        "description": "Robot can follow line, playing audio and detect each other. PWM frequency is 40khz, duty cycle is 100%",
-        "url": "20230806/line_robot_bl702_freq_40_duty_100.bin",
-        "sha256": "a83e2148041184fc30e5f8549b96d41c56bfc3845103edc2db33fa8ebfa02d28"
-      },
-      {
         "version": "0.2.7",
         "compatibility": 0,
         "date": "Aug 18, 2023",
@@ -66,6 +42,14 @@
         "description": "Improved detection distance. Duty cycle is 50%",
         "url": "20230819/line_robot_bl702_pwm_20_duty_50_improved_detect.bin",
         "sha256": "81c6bde28a949a3f48fa3eb304a6d65d0d73925897bbfe57de4e34966d16c629"
+      },
+      {
+        "version": "0.2.10",
+        "compatibility": 0,
+        "date": "Aug 20, 2023",
+        "description": "Improved detection distance and line tracking. Duty cycle is 50%",
+        "url": "20230820/line_robot_bl702_pwm_20_duty_50.bin",
+        "sha256": "80c65506055e05ba7530363114249b38bb8e9e90b6e3087d593e2cba1cca03d6"
       }
     ]
   }
