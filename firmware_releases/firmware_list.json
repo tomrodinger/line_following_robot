@@ -50,6 +50,14 @@
         "description": "Improved detection distance and line tracking. Duty cycle is 50%",
         "url": "20230820/line_robot_bl702_pwm_20_duty_50.bin",
         "sha256": "80c65506055e05ba7530363114249b38bb8e9e90b6e3087d593e2cba1cca03d6"
+      },
+      {
+        "version": "0.2.10",
+        "compatibility": 0,
+        "date": "Aug 23, 2023",
+        "description": "Test code to check turning around and music issue",
+        "url": "20230823/line_robot_bl702_test.bin",
+        "sha256": "10094ffcbbb39e196792104217974af37b58ff757a5bd7da8d758adf63d7330e"
       }
     ]
   }
