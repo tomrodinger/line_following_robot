@@ -20,14 +20,6 @@
         "sha256": "2fe97ae3a7252c9359d0b77f42964411ff4a6e92f9ca1cc0b25c449dbea309b0"
       },
       {
-        "version": "0.2.9",
-        "compatibility": 0,
-        "date": "Aug 19, 2023",
-        "description": "Improved detection distance. Duty cycle is 50%",
-        "url": "20230819/line_robot_bl702_pwm_20_duty_50_improved_detect.bin",
-        "sha256": "81c6bde28a949a3f48fa3eb304a6d65d0d73925897bbfe57de4e34966d16c629"
-      },
-      {
         "version": "0.2.10",
         "compatibility": 0,
         "date": "Aug 20, 2023",
@@ -58,6 +50,14 @@
         "description": "Test code with duty cycle as 42%",
         "url": "20230825/line_robot_bl702_pwm_duty_42.bin",
         "sha256": "977dc96f0c5694876a86af2d7a7892aab6bb9698454a3c759bc4561d91f96bff"
+      },
+      {
+        "version": "0.2.11",
+        "compatibility": 0,
+        "date": "Aug 31, 2023",
+        "description": "Test code with duty cycle as 30%",
+        "url": "20230831/line_robot_bl702_pwm_duty_30.bin",
+        "sha256": "64363bcde5117853c0c78d29a08420e55d290f4e99c77dfd5614f2fb7d8f857a"
       }
     ]
   }
