@@ -4,7 +4,7 @@
     type: full_product
     web_page_template: https://raw.githubusercontent.com/vladsomai/test_line_following_robot/main/Products/dark_template.html
     picture: https://github.com/tomrodinger/line_following_robot/blob/main/Pictures/V10/top%201.jpg
-             
+             https://github.com/tomrodinger/line_following_robot/blob/main/Pictures/V10/side%202.jpg
     description: This is a robot that follows a line. Multiple robots can share a track, communicate, and avoid collisions.
     schematic: https://raw.githubusercontent.com/tomrodinger/line_following_robot/main/PCB/V10/schematic.pdf
     user_manual: https://raw.githubusercontent.com/vladsomai/test_line_following_robot/main/Products/R1/V1/user-manual.pdf
