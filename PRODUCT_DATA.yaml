@@ -58,7 +58,7 @@
       sha256: b1374c3d764bb456661480f8d7fb871967202f30528dc16ed80daefd17b34945
   - version: V12
     type: full_product
-    web_page_template: https://raw.githubusercontent.com/vladsomai/test_line_following_robot/main/Products/dark_template.html
+    web_page_template: https://raw.githubusercontent.com/tomrodinger/line_following_robot/main/Website/dark_template.html
     picture: https://raw.githubusercontent.com/tomrodinger/line_following_robot/main/Pictures/V12/top2.jpg
     description: This is a robot that follows a line. Multiple robots can share a track, communicate, and avoid collisions with each other.
     schematic: https://raw.githubusercontent.com/tomrodinger/line_following_robot/main/PCB/V12/schematic.pdf
