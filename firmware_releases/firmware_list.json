@@ -30,34 +30,18 @@
       {
         "version": "0.2.11",
         "compatibility": 0,
-        "date": "Aug 25, 2023",
-        "description": "Test code with duty cycle as 42%",
-        "url": "20230825/line_robot_bl702_pwm_duty_42.bin",
-        "sha256": "977dc96f0c5694876a86af2d7a7892aab6bb9698454a3c759bc4561d91f96bff"
-      },
-      {
-        "version": "0.2.11",
-        "compatibility": 0,
         "date": "Aug 31, 2023",
         "description": "Test code with duty cycle as 30%",
         "url": "20230831/line_robot_bl702_pwm_duty_30.bin",
         "sha256": "64363bcde5117853c0c78d29a08420e55d290f4e99c77dfd5614f2fb7d8f857a"
       },
       {
-        "version": "0.2.11",
+        "version": "0.2.12",
         "compatibility": 0,
-        "date": "Sep 12, 2023",
-        "description": "Test code with duty cycle as 60%",
-        "url": "20230912/line_robot_bl702_duty_60.bin",
-        "sha256": "143fce9c061e81d50fe5c301154be0339b1439a9a8255e5c139724cd4f064eeb"
-      },
-      {
-        "version": "0.2.11",
-        "compatibility": 0,
-        "date": "Sep 12, 2023",
-        "description": "Test code with duty cycle as 70%",
-        "url": "20230912/line_robot_bl702_duty_70.bin",
-        "sha256": "80b44cacfed4dd98c1bb6f683c323675b4cdca70cd7d7cf81cdabdbadc24162f"
+        "date": "Oct 08, 2023",
+        "description": "Fixed robot behavior with latest PCB",
+        "url": "20231008/line_robot_bl702.bin",
+        "sha256": "1ff261595962f6bb9c36e40c82bb928eb710f094cae09b01d10f5ad05be6b3d0"
       }
     ]
   }
