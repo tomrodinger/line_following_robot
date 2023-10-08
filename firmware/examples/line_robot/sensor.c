@@ -12,7 +12,7 @@
 #define SENSOR_IR_CHAN_NUM      1
 
 #define SENSOR_IR_RAW_SIZE      128
-#define SENSOR_IR_DETECT_THRESHOLD  175
+#define SENSOR_IR_DETECT_THRESHOLD  190
 
 static struct device *adc_sensor;
 static struct device *dma_sensor;
@@ -248,12 +248,12 @@ int sensor_ir_store_calib(void)
     int idx;
     int is_calib_valid = 1;
 
-    // for (idx = 0; idx < 4; idx++) {
-    //     if (ir_sen_fdata_mag[idx] > 200) {
-    //         is_calib_valid = 0;
-    //         break;
-    //     }
-    // }
+    if (ir_sen_fdata_prev_mag[0] != 0) {
+        if (sensor_ir_is_detect) {
+            is_calib_valid = 0;
+        }
+    }
+    
 
     if (is_calib_valid) {
         sensor_ir_is_detect = false;
@@ -266,4 +266,9 @@ int sensor_ir_store_calib(void)
 bool sensor_ir_is_result_ready(void)
 {
     return (sensor_ir_is_processing == false);
+}
+
+bool sensor_ir_is_measuring(void)
+{
+    return ((sensor_ir_is_sampling == true) || (sensor_ir_is_processing == true));
 }

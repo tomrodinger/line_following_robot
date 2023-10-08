@@ -138,7 +138,11 @@ int pwm_control(struct device *dev, int cmd, void *args)
         case DEVICE_CTRL_PWM_SUSPEND_HIGH: {
             PWM_Channel_Disable(pwm_device->ch);
             PWM_SW_Mode(pwm_device->ch, ENABLE);
-            PWM_SW_Force_Value(pwm_device->ch, 1);
+            if (pwm_device->polarity_invert_mode) {
+                PWM_SW_Force_Value(pwm_device->ch, 0);
+            } else {
+                PWM_SW_Force_Value(pwm_device->ch, 1);
+            }
             pwm_device->is_stop = 1;
             break;
         }

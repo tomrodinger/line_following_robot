@@ -12,5 +12,6 @@ void sensor_ir_start_measure(void);
 bool sensor_ir_is_robot_detect(void);
 bool sensor_ir_is_result_ready(void);
 int sensor_ir_store_calib(void);
+bool sensor_ir_is_measuring(void);
 
 #endif
