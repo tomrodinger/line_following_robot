@@ -9,6 +9,7 @@
 #include "sensor.h"
 
 #define SENSOR_LIGHT_CHAN_NUM   2
+#define SENSOR_MOTOR_CHAN_NUM   2
 #define SENSOR_IR_CHAN_NUM      1
 
 #define SENSOR_IR_RAW_SIZE      128
@@ -151,16 +152,21 @@ void sensor_init(void)
     xTaskCreateStatic(sensor_ir_processing_task, (char *)"sensor", sizeof(sensor_stack) / 4, NULL, configMAX_PRIORITIES - 4, sensor_stack, &sensor_task_handle);
 }
 
-void sensor_light_read(sensor_light_t *sen_val, uint32_t sample_num)
+void sensor_light_read(sensor_light_t *sen_val, sensor_motor_t *sen_motor_val, uint32_t sample_num, uint32_t sample_motor_num)
 {
     adc_channel_val_t adc_val[SENSOR_LIGHT_CHAN_NUM];
     adc_channel_t posChList[] = { ADC_CHANNEL8, ADC_CHANNEL9 };
+    adc_channel_t motor_posChList[] = { ADC_CHANNEL6, ADC_CHANNEL11 };
     adc_channel_t negChList[] = { ADC_CHANNEL_GND, ADC_CHANNEL_GND };
     adc_channel_cfg_t adc_channel_cfg;
     uint32_t left_val = 0;
     uint32_t left_sample_num = 0;
     uint32_t right_val = 0;
     uint32_t right_sample_num = 0;
+    uint32_t left_motor_val = 0;
+    uint32_t left_motor_sample_num = 0;
+    uint32_t right_motor_val = 0;
+    uint32_t right_motor_sample_num = 0;
     int idx;
 
     while (sensor_ir_is_sampling) {
@@ -186,7 +192,7 @@ void sensor_light_read(sensor_light_t *sen_val, uint32_t sample_num)
     while (sample_num--) {
         adc_channel_start(adc_sensor);
         device_read(adc_sensor, 0, (void *)adc_val, SENSOR_LIGHT_CHAN_NUM);
-        for (idx = 0; idx < SENSOR_LIGHT_CHAN_NUM; idx++) {
+        for (idx = 0; idx < (SENSOR_LIGHT_CHAN_NUM); idx++) {
             if (adc_val[idx].posChan == ADC_CHANNEL9) {
                 left_val += (uint32_t)(adc_val[idx].volt * 1000);
                 left_sample_num++;
@@ -201,6 +207,34 @@ void sensor_light_read(sensor_light_t *sen_val, uint32_t sample_num)
     else sen_val->left = 0;
     
     if (right_sample_num) sen_val->right = right_val / right_sample_num;
+    else sen_val->right = 0;
+
+    adc_channel_cfg.pos_channel = motor_posChList;
+    adc_channel_cfg.neg_channel = negChList;
+    adc_channel_cfg.num = SENSOR_MOTOR_CHAN_NUM;
+
+    if (device_control(adc_sensor, DEVICE_CTRL_ADC_CHANNEL_CONFIG, &adc_channel_cfg) == ERROR) {
+        return;
+    }
+
+    while (sample_motor_num--) {
+        adc_channel_start(adc_sensor);
+        device_read(adc_sensor, 0, (void *)adc_val, SENSOR_MOTOR_CHAN_NUM);
+        for (idx = 0; idx < (SENSOR_MOTOR_CHAN_NUM); idx++) {
+            if (adc_val[idx].posChan == ADC_CHANNEL6) {
+                left_motor_val += (uint32_t)(adc_val[idx].volt * 1000);
+                left_motor_sample_num++;
+            } else if (adc_val[idx].posChan == ADC_CHANNEL11) {
+                right_motor_val += (uint32_t)(adc_val[idx].volt * 1000);
+                right_motor_sample_num++;
+            }
+        }
+    }
+
+    if (left_motor_sample_num) sen_motor_val->left = left_motor_val / left_motor_sample_num;
+    else sen_val->right = 0;
+
+    if (right_motor_sample_num) sen_motor_val->right = right_motor_val / right_motor_sample_num;
     else sen_val->right = 0;
 }
 
@@ -245,22 +279,10 @@ bool sensor_ir_is_robot_detect(void)
 
 int sensor_ir_store_calib(void)
 {
-    int idx;
-    int is_calib_valid = 1;
+    sensor_ir_is_detect = false;
+    memcpy((void*)ir_sen_fdata_prev_mag, (void*)ir_sen_fdata_mag, sizeof(ir_sen_fdata_mag));
 
-    if (ir_sen_fdata_prev_mag[0] != 0) {
-        if (sensor_ir_is_detect) {
-            is_calib_valid = 0;
-        }
-    }
-    
-
-    if (is_calib_valid) {
-        sensor_ir_is_detect = false;
-        memcpy((void*)ir_sen_fdata_prev_mag, (void*)ir_sen_fdata_mag, sizeof(ir_sen_fdata_mag));
-    }
-
-    return is_calib_valid;
+    return 1;
 }
 
 bool sensor_ir_is_result_ready(void)
