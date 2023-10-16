@@ -158,42 +158,35 @@ void ble_app_init(void)
     bt_enable(bt_enable_cb);
 }
 
-static void notify_cb(struct bt_conn *conn, void *user_data)
+static void indicate_cb(struct bt_conn *conn, const struct bt_gatt_attr *attr,
+                        u8_t err)
 {
-    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+    if (err != 0U) {
+        // vOutputString("Indication fail");
+        MSG("Indication fail %d\r\n", err);
+    } else {
+        MSG("Indication success\r\n");
+        // vOutputString("Indication success");
+    }
 
-    xSemaphoreGiveFromISR( tx_sem, &xHigherPriorityTaskWoken );
+    xSemaphoreGive(tx_sem);
 }
 
 void ble_app_send(uint8_t *data, uint16_t len)
 {
-    struct bt_gatt_notify_params params;
+    struct bt_gatt_indicate_params params;
     uint16_t offset = 0;
     uint16_t sent_length;
-    uint8_t uuid_idx = 1;
-    uint16_t mtu = bt_gatt_get_mtu(ble_bl_conn) - 10;
 
-    if (len) {
-        memset(&params, 0, sizeof(params));
+    if ((ble_bl_conn) && (len)) {
+        memset(&params, 0, sizeof(struct bt_gatt_indicate_params));
+        params.attr = &blattrs[2];
+        params.data = data;
+        params.len = len;
+        params.func = indicate_cb;
 
-        while (offset < len) {
-            if ((len - offset) >= mtu) {
-                sent_length = mtu;
-            } else {
-                sent_length = len - offset;
-            }
-
-            params.uuid = blattrs[uuid_idx].uuid;
-            params.attr = &blattrs[uuid_idx];
-            params.data = &data[offset];
-            params.len = sent_length;
-            params.func = notify_cb;
-
-            bt_gatt_notify_cb(ble_bl_conn, &params);
-
-            xSemaphoreTake( tx_sem, portMAX_DELAY);
-
-            offset += sent_length;
+        if (!bt_gatt_indicate(ble_bl_conn, &params)) {
+            xSemaphoreTake(tx_sem, portMAX_DELAY);
         }
     }
 }
