@@ -79,7 +79,6 @@ void robot_run(void)
     int left_speed, right_speed;
     static uint8_t robot_detect_cnt = 0;
     bool is_robot_detect = false;
-    int calib_timeout = CALIBRATION_LEFT_TIMEOUT;
     int max_speed = 60 / MOTOR_DIV;
     static sensor_motor_t prev_sen_motor_val; 
     static int cur_left_speed, cur_right_speed, prev_left_speed, prev_right_speed = 0;
@@ -113,8 +112,7 @@ void robot_run(void)
         } else {
             robot_detect_cnt = 0;
         }
-        
-        calib_timeout = CALIBRATION_LEFT_TIMEOUT;
+
         motor_run(CIRCLE_LEFT, 20 / MOTOR_DIV);
         vTaskDelay(pdMS_TO_TICKS(150));
         motor_run(STOP, 0);
@@ -122,7 +120,6 @@ void robot_run(void)
         sensor_light_read(&sen_light_val, &sen_motor_val, CALIBRATION_SAMPLES, 1);
         sen_light_calib_val.left = sen_light_val.left;
 
-        calib_timeout = CALIBRATION_RIGHT_TIMEOUT;
         motor_run(CIRCLE_RIGHT, 20 / MOTOR_DIV);
         vTaskDelay(pdMS_TO_TICKS(250));
         motor_run(STOP, 0);
@@ -130,7 +127,6 @@ void robot_run(void)
         sensor_light_read(&sen_light_val, &sen_motor_val, CALIBRATION_SAMPLES, 1);
         sen_light_calib_val.right = sen_light_val.right;
 
-        calib_timeout = CALIBRATION_CENTER_TIMEOUT;
         motor_run(CIRCLE_LEFT, 20 / MOTOR_DIV);
         vTaskDelay(pdMS_TO_TICKS(150));
         motor_run(STOP, 0);

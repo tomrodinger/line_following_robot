@@ -175,8 +175,6 @@ static void indicate_cb(struct bt_conn *conn, const struct bt_gatt_attr *attr,
 void ble_app_send(uint8_t *data, uint16_t len)
 {
     struct bt_gatt_indicate_params params;
-    uint16_t offset = 0;
-    uint16_t sent_length;
 
     if ((ble_bl_conn) && (len)) {
         memset(&params, 0, sizeof(struct bt_gatt_indicate_params));
