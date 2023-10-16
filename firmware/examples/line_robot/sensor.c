@@ -279,10 +279,21 @@ bool sensor_ir_is_robot_detect(void)
 
 int sensor_ir_store_calib(void)
 {
-    sensor_ir_is_detect = false;
-    memcpy((void*)ir_sen_fdata_prev_mag, (void*)ir_sen_fdata_mag, sizeof(ir_sen_fdata_mag));
+    int is_calib_valid = 1;
 
-    return 1;
+    if (ir_sen_fdata_prev_mag[0] != 0) {
+        if (sensor_ir_is_detect) {
+            is_calib_valid = 0;
+        }
+    }
+    
+
+    if (is_calib_valid) {
+        sensor_ir_is_detect = false;
+        memcpy((void*)ir_sen_fdata_prev_mag, (void*)ir_sen_fdata_mag, sizeof(ir_sen_fdata_mag));
+    }
+
+    return is_calib_valid;
 }
 
 bool sensor_ir_is_result_ready(void)
@@ -293,4 +304,9 @@ bool sensor_ir_is_result_ready(void)
 bool sensor_ir_is_measuring(void)
 {
     return ((sensor_ir_is_sampling == true) || (sensor_ir_is_processing == true));
+}
+
+void sensor_ir_clear_calib(void)
+{
+    memset((void*)ir_sen_fdata_prev_mag, 0, sizeof(ir_sen_fdata_mag));
 }
