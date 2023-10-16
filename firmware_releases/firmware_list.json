@@ -36,12 +36,12 @@
         "sha256": "64363bcde5117853c0c78d29a08420e55d290f4e99c77dfd5614f2fb7d8f857a"
       },
       {
-        "version": "0.2.12",
+        "version": "0.2.14",
         "compatibility": 0,
-        "date": "Oct 08, 2023",
-        "description": "Fixed robot behavior with latest PCB",
-        "url": "20231008/line_robot_bl702.bin",
-        "sha256": "1ff261595962f6bb9c36e40c82bb928eb710f094cae09b01d10f5ad05be6b3d0"
+        "date": "Oct 16, 2023",
+        "description": "Improved line following, added high spike motor detection",
+        "url": "20231016/line_robot_bl702.bin",
+        "sha256": "6db3915b9e6e89c3a6467c4018652a08732570df37f8591fa329c413bbf86979"
       }
     ]
   }
