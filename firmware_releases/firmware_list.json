@@ -6,34 +6,10 @@
       {
         "version": "0.2.10",
         "compatibility": 0,
-        "date": "Aug 20, 2023",
-        "description": "Improved detection distance and line tracking. Duty cycle is 50%",
-        "url": "20230820/line_robot_bl702_pwm_20_duty_50.bin",
-        "sha256": "80c65506055e05ba7530363114249b38bb8e9e90b6e3087d593e2cba1cca03d6"
-      },
-      {
-        "version": "0.2.10",
-        "compatibility": 0,
         "date": "Aug 23, 2023",
         "description": "Test code to check turning around and music issue",
         "url": "20230823/line_robot_bl702_test.bin",
         "sha256": "10094ffcbbb39e196792104217974af37b58ff757a5bd7da8d758adf63d7330e"
-      },
-      {
-        "version": "0.2.11",
-        "compatibility": 0,
-        "date": "Aug 25, 2023",
-        "description": "Test code with duty cycle as 35%",
-        "url": "20230825/line_robot_bl702_pwm_duty_35.bin",
-        "sha256": "edeb410230944e41113dd150e8463d23f30ca87315bc431d4e31432f52d4c70e"
-      },
-      {
-        "version": "0.2.11",
-        "compatibility": 0,
-        "date": "Aug 31, 2023",
-        "description": "Test code with duty cycle as 30%",
-        "url": "20230831/line_robot_bl702_pwm_duty_30.bin",
-        "sha256": "64363bcde5117853c0c78d29a08420e55d290f4e99c77dfd5614f2fb7d8f857a"
       },
       {
         "version": "0.2.14",
@@ -42,6 +18,30 @@
         "description": "Improved line following, added high spike motor detection",
         "url": "20231016/line_robot_bl702.bin",
         "sha256": "6db3915b9e6e89c3a6467c4018652a08732570df37f8591fa329c413bbf86979"
+      },
+      {
+        "version": "0.2.14",
+        "compatibility": 0,
+        "date": "Oct 17, 2023",
+        "description": "Test1: Revert to version duty cycle as 50%, no more changes",
+        "url": "20231017/test1.bin",
+        "sha256": "a78c287425b629052fc2617bd0e03891a84b8b8ad13ad7c8d0eb9295cdd15840"
+      },
+      {
+        "version": "0.2.14",
+        "compatibility": 0,
+        "date": "Oct 17, 2023",
+        "description": "Test2: Revert to version duty cycle as 50%, read high spike adc channel",
+        "url": "20231017/test2.bin",
+        "sha256": "4079cd648d1531aaf8fc625feda1be2241f88612e4e581f7067dad5add1f6f5e"
+      },
+      {
+        "version": "0.2.14",
+        "compatibility": 0,
+        "date": "Oct 17, 2023",
+        "description": "Test3: Revert to version duty cycle as 50%, detect high spike",
+        "url": "20231017/test3.bin",
+        "sha256": "7d90be2deaa9607aa25602fb923be91a6f8752f42c542f9289c1eaedf68cb455"
       }
     ]
   }
