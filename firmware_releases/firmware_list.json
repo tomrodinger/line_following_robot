@@ -22,26 +22,26 @@
       {
         "version": "0.2.14",
         "compatibility": 0,
-        "date": "Oct 17, 2023",
-        "description": "Test1: Revert to version duty cycle as 50%, no more changes",
-        "url": "20231017/test1.bin",
-        "sha256": "a78c287425b629052fc2617bd0e03891a84b8b8ad13ad7c8d0eb9295cdd15840"
+        "date": "Oct 18, 2023",
+        "description": "Test1: Maximum speed as 70%",
+        "url": "20231018/test1.bin",
+        "sha256": "8e6a528ecaa6cba69d6041c3721a7ddaa2c65fdf90b3ee61b0f06f24d7123896"
       },
       {
         "version": "0.2.14",
         "compatibility": 0,
-        "date": "Oct 17, 2023",
-        "description": "Test2: Revert to version duty cycle as 50%, read high spike adc channel",
-        "url": "20231017/test2.bin",
-        "sha256": "4079cd648d1531aaf8fc625feda1be2241f88612e4e581f7067dad5add1f6f5e"
+        "date": "Oct 18, 2023",
+        "description": "Test2: Maximum speed as 60%",
+        "url": "20231018/test2.bin",
+        "sha256": "4ec9771a5a137aaefa7450b631839335081a75b0482ca309cbecb179a5bb4c1a"
       },
       {
         "version": "0.2.14",
         "compatibility": 0,
-        "date": "Oct 17, 2023",
-        "description": "Test3: Revert to version duty cycle as 50%, detect high spike",
-        "url": "20231017/test3.bin",
-        "sha256": "7d90be2deaa9607aa25602fb923be91a6f8752f42c542f9289c1eaedf68cb455"
+        "date": "Oct 18, 2023",
+        "description": "Test3: Maximum speed as 50%",
+        "url": "20231018/test3.bin",
+        "sha256": "3f6d9c52b832a597418ef1cde7d4ff3859e3fd77187e8f10f292d55f8e6f2bcc"
       }
     ]
   }
