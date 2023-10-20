@@ -42,6 +42,14 @@
         "description": "Test3: Maximum speed as 50%",
         "url": "20231018/test3.bin",
         "sha256": "3f6d9c52b832a597418ef1cde7d4ff3859e3fd77187e8f10f292d55f8e6f2bcc"
+      },
+      {
+        "version": "1.0.0",
+        "compatibility": 0,
+        "date": "Oct 20, 2023",
+        "description": "Firt version with all of features",
+        "url": "20231020/line_robot_bl702.bin",
+        "sha256": "5fe411a6cbd10e05da053dae07c00040ca7d9b001bf6fd2745698067981f172d"
       }
     ]
   }
