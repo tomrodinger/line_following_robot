@@ -33,7 +33,7 @@ float input = 0, output = 0;
 float setpoint = 0;
 
 // Control loop gains
-float kp = 0.06, ki = 0.0001, kd = 0.005;
+float kp = 0.1, ki = 0.0001, kd = 0.005;
 uint64_t prev_calib_time;
 
 #define MOTOR_DIV   1
@@ -79,7 +79,8 @@ void robot_run(void)
     int left_speed, right_speed;
     static uint8_t robot_detect_cnt = 0;
     bool is_robot_detect = false;
-    int max_speed = 60 / MOTOR_DIV;
+    int calib_timeout = CALIBRATION_LEFT_TIMEOUT;
+    int max_speed = 50 / MOTOR_DIV;
     static sensor_motor_t prev_sen_motor_val; 
     static int cur_left_speed, cur_right_speed, prev_left_speed, prev_right_speed = 0;
     bool is_high_spike_detected = false;
@@ -112,23 +113,58 @@ void robot_run(void)
         } else {
             robot_detect_cnt = 0;
         }
+        
+        calib_timeout = CALIBRATION_LEFT_TIMEOUT;
+        motor_run(CIRCLE_LEFT, 25 / MOTOR_DIV);
+        while(1) {
+            sensor_light_read(&sen_light_val, &sen_motor_val, CALIBRATION_SAMPLES, 1);
+            if ((sen_light_val.left > sen_light_val.right) &&
+                    ((sen_light_val.left - sen_light_val.right) >= 100)) {
+                break;
+            }
 
-        motor_run(CIRCLE_LEFT, 20 / MOTOR_DIV);
-        vTaskDelay(pdMS_TO_TICKS(150));
-        motor_run(STOP, 0);
-        vTaskDelay(pdMS_TO_TICKS(100));
-        sensor_light_read(&sen_light_val, &sen_motor_val, CALIBRATION_SAMPLES, 1);
+            calib_timeout--;
+            if (calib_timeout == 0) {
+                break;
+            }
+
+            vTaskDelay(pdMS_TO_TICKS(1));
+        }
         sen_light_calib_val.left = sen_light_val.left;
 
-        motor_run(CIRCLE_RIGHT, 20 / MOTOR_DIV);
-        vTaskDelay(pdMS_TO_TICKS(250));
-        motor_run(STOP, 0);
-        vTaskDelay(pdMS_TO_TICKS(100));
-        sensor_light_read(&sen_light_val, &sen_motor_val, CALIBRATION_SAMPLES, 1);
+        calib_timeout = CALIBRATION_RIGHT_TIMEOUT;
+        motor_run(CIRCLE_RIGHT, 25 / MOTOR_DIV);
+        while(1) {
+            sensor_light_read(&sen_light_val, &sen_motor_val, CALIBRATION_SAMPLES, 1);
+            if ((sen_light_val.right > sen_light_val.left) &&
+                    ((sen_light_val.right - sen_light_val.left) >= 100)) {
+                break;
+            }
+
+            calib_timeout--;
+            if (calib_timeout == 0) {
+                break;
+            }
+
+            vTaskDelay(pdMS_TO_TICKS(1));
+        }
         sen_light_calib_val.right = sen_light_val.right;
 
-        motor_run(CIRCLE_LEFT, 20 / MOTOR_DIV);
-        vTaskDelay(pdMS_TO_TICKS(150));
+        calib_timeout = CALIBRATION_CENTER_TIMEOUT;
+        motor_run(CIRCLE_LEFT, 25 / MOTOR_DIV);
+        while(1) {
+            sensor_light_read(&sen_light_val, &sen_motor_val, CALIBRATION_SAMPLES, 1);
+            if (abs(sen_light_val.left - sen_light_val.right) <= 20) {
+                break;
+            }
+
+            calib_timeout--;
+            if (calib_timeout == 0) {
+                break;
+            }
+
+            vTaskDelay(pdMS_TO_TICKS(1));
+        }
         motor_run(STOP, 0);
         vTaskDelay(pdMS_TO_TICKS(100));
 
@@ -185,14 +221,14 @@ void robot_run(void)
     prev_diff_speed = abs(left_speed - right_speed);
 
     if ((bflb_platform_get_time_ms() - prev_calib_time) < 500) {
-        max_speed = 30 / MOTOR_DIV;
+        max_speed = 40 / MOTOR_DIV;
         prev_sen_motor_val = sen_motor_val;
     } else if ((bflb_platform_get_time_ms() - prev_calib_time) >= 4500) {
-        max_speed = 30 / MOTOR_DIV;
+        max_speed = 40 / MOTOR_DIV;
         prev_sen_motor_val = sen_motor_val;
     } else {
-        if (prev_diff_speed >= 20) {
-            max_speed = 60 / MOTOR_DIV;
+        if (prev_diff_speed >= 30) {
+            max_speed = 50 / MOTOR_DIV;
         }
 
         if ((((int)(sen_motor_val.left - prev_sen_motor_val.left) > 30) && 
@@ -211,7 +247,7 @@ void robot_run(void)
         prev_right_speed = cur_right_speed;
 
         if (is_high_spike_detected) {
-            max_speed = 30 / MOTOR_DIV;
+            max_speed = 35 / MOTOR_DIV;
         }
     }
 
@@ -264,8 +300,9 @@ robot_detected:
         is_calib = false;
         sensor_ir_clear_calib();
         
+        motor_run(CIRCLE_LEFT, 30 / MOTOR_DIV);
+        vTaskDelay(pdMS_TO_TICKS(300));
         motor_run(CIRCLE_LEFT, 20 / MOTOR_DIV);
-        vTaskDelay(pdMS_TO_TICKS(400));
 
         timeout_turn = TURN_TIMEOUT;
 
