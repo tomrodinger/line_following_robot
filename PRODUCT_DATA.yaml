@@ -58,8 +58,8 @@
       sha256: b1374c3d764bb456661480f8d7fb871967202f30528dc16ed80daefd17b34945
   - version: V12
     type: full_product
-    web_page_template: https://raw.githubusercontent.com/tomrodinger/line_following_robot/main/Website/dark_template.html
-    video: <iframe height=498 width=510 src='https://player.youku.com/embed/XNjA5NzEwNDYyMA==' frameborder=0 'allowfullscreen'></iframe>
+    web_page_template: https://raw.githubusercontent.com/vladsomai/test_line_following_robot/main/Products/dark_template.html
+    video: https://player.youku.com/embed/XNjA5NzEwNDYyMA==
     picture: 
     - https://raw.githubusercontent.com/tomrodinger/line_following_robot/main/Pictures/V12/top2.jpg
     - https://github.com/tomrodinger/line_following_robot/blob/main/Pictures/V12/side2.jpg
