@@ -59,10 +59,10 @@
   - version: V12
     type: full_product
     web_page_template: https://raw.githubusercontent.com/tomrodinger/line_following_robot/main/Website/dark_template.html
+    video: <iframe height=498 width=510 src='https://player.youku.com/embed/XNjA5NzEwNDYyMA==' frameborder=0 'allowfullscreen'></iframe>
     picture: 
     - https://raw.githubusercontent.com/tomrodinger/line_following_robot/main/Pictures/V12/top2.jpg
     - https://github.com/tomrodinger/line_following_robot/blob/main/Pictures/V12/side2.jpg
-    video: <iframe height=498 width=510 src='https://player.youku.com/embed/XNjA5NzEwNDYyMA==' frameborder=0 'allowfullscreen'></iframe>
     description: This is a robot that follows a line. Multiple robots can share a track, communicate, and avoid collisions with each other.
     schematic: https://raw.githubusercontent.com/tomrodinger/line_following_robot/main/PCB/V12/schematic.pdf
     user_manual: https://raw.githubusercontent.com/vladsomai/test_line_following_robot/main/Products/R1/V1/user-manual.pdf
