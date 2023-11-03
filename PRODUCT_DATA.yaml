@@ -3,7 +3,10 @@
   - version: V10
     type: full_product
     web_page_template: https://raw.githubusercontent.com/vladsomai/test_line_following_robot/main/Products/dark_template.html
-    picture: https://raw.githubusercontent.com/tomrodinger/line_following_robot/main/Pictures/V10/top1.jpg
+    video: https://www.youtube.com/embed/KdNqmxu_V4A?si=aYF9-hdy6oj4it3F
+    picture: 
+    - https://raw.githubusercontent.com/tomrodinger/line_following_robot/main/Pictures/V10/top2.jpg
+    - https://raw.githubusercontent.com/tomrodinger/line_following_robot/main/Pictures/V10/side2.jpg
     description: This is a robot that follows a line. Multiple robots can share a track, communicate, and avoid collisions.
     schematic: https://raw.githubusercontent.com/tomrodinger/line_following_robot/main/PCB/V10/schematic.pdf
     user_manual: https://raw.githubusercontent.com/vladsomai/test_line_following_robot/main/Products/R1/V1/user-manual.pdf
@@ -31,7 +34,10 @@
   - version: V11
     type: full_product
     web_page_template: https://raw.githubusercontent.com/vladsomai/test_line_following_robot/main/Products/dark_template.html
-    picture: https://raw.githubusercontent.com/tomrodinger/line_following_robot/main/Pictures/V11/top2.jpg
+    video: https://www.youtube.com/embed/KdNqmxu_V4A?si=aYF9-hdy6oj4it3F
+    picture: 
+    - https://raw.githubusercontent.com/tomrodinger/line_following_robot/main/Pictures/V11/top2.jpg
+    - https://raw.githubusercontent.com/tomrodinger/line_following_robot/main/Pictures/V11/side2.jpg
     description: This is a robot that follows a line. Multiple robots can share a track, communicate, and avoid collisions.
     schematic: https://raw.githubusercontent.com/tomrodinger/line_following_robot/main/PCB/V11/schematic.pdf
     user_manual: https://raw.githubusercontent.com/vladsomai/test_line_following_robot/main/Products/R1/V1/user-manual.pdf
@@ -62,7 +68,7 @@
     video: https://player.youku.com/embed/XNjA5NzEwNDYyMA==
     picture: 
     - https://raw.githubusercontent.com/tomrodinger/line_following_robot/main/Pictures/V12/top2.jpg
-    - https://github.com/tomrodinger/line_following_robot/blob/main/Pictures/V12/side2.jpg
+    - https://raw.githubusercontent.com/tomrodinger/line_following_robot/main/Pictures/V12/side2.jpg
     description: This is a robot that follows a line. Multiple robots can share a track, communicate, and avoid collisions with each other.
     schematic: https://raw.githubusercontent.com/tomrodinger/line_following_robot/main/PCB/V12/schematic.pdf
     user_manual: https://raw.githubusercontent.com/vladsomai/test_line_following_robot/main/Products/R1/V1/user-manual.pdf
