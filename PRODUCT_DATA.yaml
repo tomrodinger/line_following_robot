@@ -9,7 +9,7 @@
     - https://raw.githubusercontent.com/tomrodinger/line_following_robot/main/Pictures/V10/side2.jpg
     description: This is a robot that follows a line. Multiple robots can share a track, communicate, and avoid collisions.
     schematic: https://raw.githubusercontent.com/tomrodinger/line_following_robot/main/PCB/V10/schematic.pdf
-    user_manual: https://raw.githubusercontent.com/vladsomai/test_line_following_robot/main/Products/R1/V1/user-manual.pdf
+    user_manual: 
     tutorial: 
     github: https://github.com/tomrodinger/line_following_robot/tree/main/PCB/V10
     firmwares:
@@ -40,7 +40,7 @@
     - https://raw.githubusercontent.com/tomrodinger/line_following_robot/main/Pictures/V11/side2.jpg
     description: This is a robot that follows a line. Multiple robots can share a track, communicate, and avoid collisions.
     schematic: https://raw.githubusercontent.com/tomrodinger/line_following_robot/main/PCB/V11/schematic.pdf
-    user_manual: https://raw.githubusercontent.com/vladsomai/test_line_following_robot/main/Products/R1/V1/user-manual.pdf
+    user_manual: 
     tutorial: 
     github: https://github.com/tomrodinger/line_following_robot/tree/main/PCB/V11
     firmwares:
@@ -72,7 +72,7 @@
     - https://raw.githubusercontent.com/tomrodinger/line_following_robot/main/Pictures/V12/front.jpg
     description: This is a robot that follows a line. Multiple robots can share a track, communicate, and avoid collisions with each other.
     schematic: https://raw.githubusercontent.com/tomrodinger/line_following_robot/main/PCB/V12/schematic.pdf
-    user_manual: https://raw.githubusercontent.com/vladsomai/test_line_following_robot/main/Products/R1/V1/user-manual.pdf
+    user_manual: 
     tutorial: 
     github: https://github.com/tomrodinger/line_following_robot/tree/main/PCB/V12
     firmwares:
